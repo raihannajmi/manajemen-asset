@@ -31,6 +31,9 @@ model User {
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
 
+  rentalRequests RentalRequest[]
+  approvals      Approval[]
+
   @@map("users")
 }
 
@@ -80,6 +83,7 @@ model Asset {
   
   media              AssetMedia[]
   availability       AssetAvailability[]
+  rentalRequests     RentalRequest[]
 
   @@map("assets")
 }
@@ -105,4 +109,70 @@ model AssetAvailability {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("asset_availability")
+}
+
+model RentalRequest {
+  id               String             @id @default(uuid())
+  requestNo        String             @unique @map("request_no")
+  tenantUserId     String             @map("tenant_user_id")
+  tenantUser       User               @relation(fields: [tenantUserId], references: [id])
+  assetId          String             @map("asset_id")
+  asset            Asset              @relation(fields: [assetId], references: [id])
+  eventName        String             @map("event_name")
+  startDatetime    DateTime           @map("start_datetime")
+  endDatetime      DateTime           @map("end_datetime")
+  participantCount Int                @map("participant_count")
+  purpose          String?
+  status           String             @default("DRAFT") // DRAFT, SUBMITTED, PENDING_APPROVAL, APPROVED, REJECTED, REVISION
+  submittedAt      DateTime?          @map("submitted_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  documents        RentalRequestDocument[]
+  approvals        Approval[]
+  statusHistory    StatusHistory[]
+
+  @@index([status, startDatetime])
+  @@map("rental_requests")
+}
+
+model RentalRequestDocument {
+  id               String         @id @default(uuid())
+  requestId        String         @map("request_id")
+  request          RentalRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  docType          String         @map("doc_type") // KTP, SURAT_PENGANTAR, PROPOSAL
+  fileUrl          String         @map("file_url")
+  verifiedBy       String?        @map("verified_by")
+  verifiedAt       DateTime?      @map("verified_at")
+  verificationNote String?        @map("verification_note")
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  @@map("rental_request_documents")
+}
+
+model Approval {
+  id               String         @id @default(uuid())
+  requestId        String         @map("request_id")
+  request          RentalRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approverUserId   String         @map("approver_user_id")
+  approver         User           @relation(fields: [approverUserId], references: [id])
+  action           String         // APPROVE, REJECT, REVISION
+  note             String?
+  actedAt          DateTime       @default(now()) @map("acted_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  @@map("approvals")
+}
+
+model StatusHistory {
+  id               String         @id @default(uuid())
+  requestId        String         @map("request_id")
+  request          RentalRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  fromStatus       String?        @map("from_status")
+  toStatus         String         @map("to_status")
+  changedBy        String?        @map("changed_by")
+  note             String?
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  @@map("status_history")
 }

@@ -28,6 +28,9 @@ app.use('/api/v1/auth', authRoutes);
 const assetRoutes = require('./modules/assets/asset.routes');
 app.use('/api/v1/assets', assetRoutes);
 
+const rentalRoutes = require('./modules/rentals/rental.routes');
+app.use('/api/v1/rentals', rentalRoutes);
+
 // TODO: Add Modular Routes here
 
 // Error Handling Middleware
