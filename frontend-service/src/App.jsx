@@ -9,6 +9,11 @@ import AssetCategory from './pages/assets/AssetCategory';
 import AssetManagement from './pages/assets/AssetManagement';
 import AssetCatalog from './pages/catalog/AssetCatalog';
 import AssetDetail from './pages/catalog/AssetDetail';
+import MyRentals from './pages/rentals/MyRentals';
+import BookAsset from './pages/rentals/BookAsset';
+import VerifyRentals from './pages/approvals/VerifyRentals';
+import ApproveRentals from './pages/approvals/ApproveRentals';
+import RentalDetail from './pages/rentals/RentalDetail';
 
 // Temporary components
 const DashboardPage = () => (
@@ -38,6 +43,12 @@ function App() {
           <Route path="/assets" element={accessToken ? <DashboardLayout><AssetManagement /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/catalog" element={accessToken ? <DashboardLayout><AssetCatalog /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/catalog/:id" element={accessToken ? <DashboardLayout><AssetDetail /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/catalog/:id/book" element={accessToken ? <DashboardLayout><BookAsset /></DashboardLayout> : <Navigate to="/login" />} />
+          
+          <Route path="/my-rentals" element={accessToken ? <DashboardLayout><MyRentals /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/verify-rentals" element={accessToken ? <DashboardLayout><VerifyRentals /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/approvals" element={accessToken ? <DashboardLayout><ApproveRentals /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/rentals/:id" element={accessToken ? <DashboardLayout><RentalDetail /></DashboardLayout> : <Navigate to="/login" />} />
 
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>

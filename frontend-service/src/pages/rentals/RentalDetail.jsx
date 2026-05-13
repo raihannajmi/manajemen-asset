@@ -1,0 +1,263 @@
+import React, { useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Loader2, Calendar, Users, MapPin, FileText, CheckCircle, XCircle, AlertTriangle, FileSignature } from 'lucide-react';
+import useAuthStore from '../../store/useAuthStore';
+import api from '../../lib/axios';
+
+const STATUS_BADGES = {
+  DRAFT: 'bg-slate-100 text-slate-700',
+  SUBMITTED: 'bg-blue-100 text-blue-700',
+  PENDING_APPROVAL: 'bg-yellow-100 text-yellow-700',
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+  REVISION: 'bg-orange-100 text-orange-700',
+};
+
+const RentalDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const [note, setNote] = useState('');
+
+  const { data: rental, isLoading } = useQuery({
+    queryKey: ['rental', id],
+    queryFn: async () => {
+      const res = await api.get(`/rentals/${id}`);
+      return res.data;
+    }
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: async () => api.post(`/rentals/${id}/verify`, { note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['rental', id]);
+      navigate('/verify-rentals');
+    }
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (action) => api.post(`/rentals/${id}/approve`, { action, note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['rental', id]);
+      navigate('/approvals');
+    }
+  });
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
+  if (!rental) return <div className="text-center py-20">Data tidak ditemukan.</div>;
+
+  const isAdmin = user?.role === 'ADMIN_ASET';
+  const isPimpinan = user?.role === 'PIMPINAN';
+  const isTenant = user?.role === 'PENYEWA';
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      <button onClick={() => navigate(-1)} className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600">
+        <ArrowLeft size={16} className="mr-2" /> Kembali
+      </button>
+
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Detail Pengajuan</h1>
+          <p className="text-slate-500 mt-1 font-mono">{rental.requestNo}</p>
+        </div>
+        <div className={`px-4 py-2 rounded-full font-bold text-sm ${STATUS_BADGES[rental.status]}`}>
+          {rental.status.replace('_', ' ')}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Tenant Info */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Data Pemohon</h2>
+            <div className="grid grid-cols-2 gap-y-4 text-sm">
+              <div>
+                <p className="text-slate-500">Nama Lengkap</p>
+                <p className="font-semibold text-slate-900">{rental.tenantUser.fullName}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Organisasi</p>
+                <p className="font-semibold text-slate-900">{rental.tenantUser.organization || '-'}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Email</p>
+                <p className="font-semibold text-slate-900">{rental.tenantUser.email}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">No. Telepon</p>
+                <p className="font-semibold text-slate-900">{rental.tenantUser.phone || '-'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Asset & Event Info */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Detail Sewa</h2>
+            <div className="mb-4">
+              <p className="text-slate-500 text-sm">Nama Acara</p>
+              <p className="font-semibold text-slate-900 text-lg">{rental.eventName}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-y-4 text-sm mb-4">
+              <div>
+                <p className="text-slate-500">Aset yang Disewa</p>
+                <Link to={`/catalog/${rental.assetId}`} className="font-semibold text-blue-600 hover:underline">{rental.asset.name}</Link>
+              </div>
+              <div>
+                <p className="text-slate-500">Jumlah Peserta</p>
+                <p className="font-semibold text-slate-900">{rental.participantCount} orang</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Mulai</p>
+                <p className="font-semibold text-slate-900">{new Date(rental.startDatetime).toLocaleString('id-ID')}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Selesai</p>
+                <p className="font-semibold text-slate-900">{new Date(rental.endDatetime).toLocaleString('id-ID')}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm">Tujuan Penyewaan</p>
+              <p className="text-slate-800 mt-1">{rental.purpose}</p>
+            </div>
+          </div>
+
+          {/* Documents */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Dokumen Persyaratan</h2>
+            {rental.documents.length === 0 ? (
+              <p className="text-slate-500 text-sm">Tidak ada dokumen yang diunggah.</p>
+            ) : (
+              <div className="space-y-3">
+                {rental.documents.map(doc => (
+                  <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex items-center">
+                      <FileText className="text-slate-400 mr-3" size={20} />
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">{doc.docType.replace('_', ' ')}</p>
+                        <p className="text-xs text-slate-500">Uploaded: {new Date(doc.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="px-4 py-1.5 bg-white border border-slate-200 text-blue-600 text-sm font-semibold rounded-lg hover:bg-slate-50">
+                      Buka Dokumen
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Actions & History */}
+        <div className="space-y-6">
+          {/* Admin Verification Form */}
+          {isAdmin && rental.status === 'SUBMITTED' && (
+            <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm shadow-blue-50">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileSignature className="mr-2 text-blue-600" size={20} /> Form Verifikasi</h3>
+              <p className="text-sm text-slate-500 mb-4">Pastikan dokumen pemohon valid sebelum meneruskannya ke Pimpinan.</p>
+              <textarea
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 text-sm"
+                rows={3}
+                placeholder="Catatan untuk pimpinan (opsional)..."
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              />
+              <button
+                onClick={() => verifyMutation.mutate()}
+                disabled={verifyMutation.isPending}
+                className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition flex justify-center items-center"
+              >
+                {verifyMutation.isPending && <Loader2 size={16} className="animate-spin mr-2" />}
+                Verifikasi & Teruskan
+              </button>
+            </div>
+          )}
+
+          {/* Pimpinan Approval Form */}
+          {isPimpinan && rental.status === 'PENDING_APPROVAL' && (
+            <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm shadow-blue-50">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><CheckCircle className="mr-2 text-blue-600" size={20} /> Form Keputusan</h3>
+              <p className="text-sm text-slate-500 mb-4">Berikan persetujuan, penolakan, atau minta revisi dokumen.</p>
+              <textarea
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 text-sm"
+                rows={3}
+                placeholder="Catatan persetujuan / alasan penolakan..."
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              />
+              <div className="space-y-3">
+                <button
+                  onClick={() => approveMutation.mutate('APPROVED')}
+                  disabled={approveMutation.isPending}
+                  className="w-full py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition"
+                >
+                  Setujui Pengajuan
+                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => approveMutation.mutate('REVISION')}
+                    disabled={approveMutation.isPending || !note.trim()}
+                    className="w-full py-2 bg-orange-100 text-orange-700 font-bold rounded-xl hover:bg-orange-200 transition disabled:opacity-50"
+                  >
+                    Minta Revisi
+                  </button>
+                  <button
+                    onClick={() => approveMutation.mutate('REJECTED')}
+                    disabled={approveMutation.isPending || !note.trim()}
+                    className="w-full py-2 bg-red-100 text-red-700 font-bold rounded-xl hover:bg-red-200 transition disabled:opacity-50"
+                  >
+                    Tolak Sewa
+                  </button>
+                </div>
+                {(!note.trim() && rental.status === 'PENDING_APPROVAL') && (
+                  <p className="text-xs text-slate-400 text-center mt-2">Catatan wajib diisi untuk Revisi/Tolak.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Feedback Display for Tenant */}
+          {isTenant && ['REJECTED', 'REVISION'].includes(rental.status) && rental.statusHistory.length > 0 && (
+            <div className={`p-5 rounded-2xl border ${rental.status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'}`}>
+              <div className="flex items-start">
+                <AlertTriangle className={`mr-3 mt-0.5 ${rental.status === 'REJECTED' ? 'text-red-500' : 'text-orange-500'}`} size={20} />
+                <div>
+                  <h4 className={`font-bold ${rental.status === 'REJECTED' ? 'text-red-800' : 'text-orange-800'}`}>
+                    {rental.status === 'REJECTED' ? 'Pengajuan Ditolak' : 'Perlu Revisi Dokumen'}
+                  </h4>
+                  <p className={`text-sm mt-1 ${rental.status === 'REJECTED' ? 'text-red-600' : 'text-orange-700'}`}>
+                    Catatan Pimpinan: "{rental.statusHistory[0]?.note || '-'}"
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Status History / Tracking */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Jejak Pengajuan</h3>
+            <div className="space-y-6">
+              {rental.statusHistory.map((history, idx) => (
+                <div key={history.id} className="relative flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full z-10" />
+                    {idx !== rental.statusHistory.length - 1 && <div className="w-px h-full bg-slate-200 absolute top-3" />}
+                  </div>
+                  <div className="-mt-1.5 pb-4">
+                    <p className="text-sm font-bold text-slate-800">{history.toStatus.replace('_', ' ')}</p>
+                    <p className="text-xs text-slate-400">{new Date(history.createdAt).toLocaleString('id-ID')}</p>
+                    {history.note && <p className="text-sm text-slate-600 mt-1 italic">"{history.note}"</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RentalDetail;
