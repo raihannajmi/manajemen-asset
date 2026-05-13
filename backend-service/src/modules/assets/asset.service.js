@@ -7,7 +7,8 @@ class AssetService {
   }
 
   async createCategory(data) {
-    return prisma.assetCategory.create({ data });
+    const { id, ...cleanData } = data;
+    return prisma.assetCategory.create({ data: cleanData });
   }
 
   async updateCategory(id, data) {
@@ -70,7 +71,8 @@ class AssetService {
   }
 
   async createAsset(data) {
-    return prisma.asset.create({ data });
+    const { id, ...cleanData } = data;
+    return prisma.asset.create({ data: cleanData });
   }
 
   async updateAsset(id, data) {
