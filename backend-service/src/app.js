@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
+const authRoutes = require('./modules/auth/auth.routes');
+
 const app = express();
 
 // Middlewares
@@ -12,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Basic route
+// Routes
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to Manajemen Asset API' });
 });
@@ -20,6 +22,8 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Manajemen Asset API is running' });
 });
+
+app.use('/api/v1/auth', authRoutes);
 
 // TODO: Add Modular Routes here
 
