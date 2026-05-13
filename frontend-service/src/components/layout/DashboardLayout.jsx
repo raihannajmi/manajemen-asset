@@ -34,8 +34,10 @@ const DashboardLayout = ({ children }) => {
     { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET'] },
     { name: 'Manajemen Aset', icon: <Package size={20} />, path: '/assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Katalog Aset', icon: <Package size={20} />, path: '/catalog', roles: ['PENYEWA'] },
+    { name: 'Aset Tambahan', icon: <Package size={20} />, path: '/additional-assets', roles: ['ADMIN_ASET'] },
     { name: 'Pengajuan Saya', icon: <FileText size={20} />, path: '/my-rentals', roles: ['PENYEWA'] },
     { name: 'Verifikasi Pengajuan', icon: <FileText size={20} />, path: '/verify-rentals', roles: ['ADMIN_ASET'] },
+    { name: 'Verifikasi Pembayaran', icon: <FileText size={20} />, path: '/verify-payments', roles: ['ADMIN_ASET'] },
     { name: 'Persetujuan', icon: <FileText size={20} />, path: '/approvals', roles: ['PIMPINAN'] },
     { name: 'Riwayat Audit', icon: <History size={20} />, path: '/audit-logs', roles: ['ADMIN_ASET'] },
   ];
