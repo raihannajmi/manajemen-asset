@@ -5,6 +5,10 @@ import useAuthStore from './store/useAuthStore';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginPage from './pages/auth/Login';
 import RegisterPage from './pages/auth/Register';
+import AssetCategory from './pages/assets/AssetCategory';
+import AssetManagement from './pages/assets/AssetManagement';
+import AssetCatalog from './pages/catalog/AssetCatalog';
+import AssetDetail from './pages/catalog/AssetDetail';
 
 // Temporary components
 const DashboardPage = () => (
@@ -27,7 +31,14 @@ function App() {
         <Routes>
           <Route path="/login" element={!accessToken ? <LoginPage /> : <Navigate to="/dashboard" />} />
           <Route path="/register" element={!accessToken ? <RegisterPage /> : <Navigate to="/dashboard" />} />
+          
           <Route path="/dashboard" element={accessToken ? <DashboardPage /> : <Navigate to="/login" />} />
+          
+          <Route path="/categories" element={accessToken ? <DashboardLayout><AssetCategory /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/assets" element={accessToken ? <DashboardLayout><AssetManagement /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/catalog" element={accessToken ? <DashboardLayout><AssetCatalog /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/catalog/:id" element={accessToken ? <DashboardLayout><AssetDetail /></DashboardLayout> : <Navigate to="/login" />} />
+
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>

@@ -26,7 +26,9 @@ const DashboardLayout = ({ children }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['ADMIN_ASET', 'PIMPINAN', 'PENYEWA'] },
-    { name: 'Daftar Aset', icon: <Package size={20} />, path: '/assets', roles: ['ADMIN_ASET', 'PIMPINAN', 'PENYEWA'] },
+    { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET'] },
+    { name: 'Manajemen Aset', icon: <Package size={20} />, path: '/assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    { name: 'Katalog Aset', icon: <Package size={20} />, path: '/catalog', roles: ['PENYEWA'] },
     { name: 'Pengajuan Saya', icon: <FileText size={20} />, path: '/my-rentals', roles: ['PENYEWA'] },
     { name: 'Verifikasi Pengajuan', icon: <FileText size={20} />, path: '/verify-rentals', roles: ['ADMIN_ASET'] },
     { name: 'Persetujuan', icon: <FileText size={20} />, path: '/approvals', roles: ['PIMPINAN'] },
