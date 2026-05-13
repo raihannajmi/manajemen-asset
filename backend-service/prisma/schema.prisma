@@ -31,8 +31,10 @@ model User {
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
 
-  rentalRequests RentalRequest[]
-  approvals      Approval[]
+  rentalRequests   RentalRequest[]
+  approvals        Approval[]
+  payments         Payment[]
+  verifiedPayments Payment[] @relation("PaymentVerifier")
 
   @@map("users")
 }
@@ -131,6 +133,8 @@ model RentalRequest {
   documents        RentalRequestDocument[]
   approvals        Approval[]
   statusHistory    StatusHistory[]
+  invoice          Invoice?
+  contract         Contract?
 
   @@index([status, startDatetime])
   @@map("rental_requests")
@@ -175,4 +179,79 @@ model StatusHistory {
   createdAt        DateTime       @default(now()) @map("created_at")
 
   @@map("status_history")
+}
+
+model Invoice {
+  id               String         @id @default(uuid())
+  requestId        String         @unique @map("request_id")
+  request          RentalRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  invoiceNo        String         @unique @map("invoice_no")
+  issueDate        DateTime       @map("issue_date")
+  dueDate          DateTime       @map("due_date")
+  subtotal         Float
+  utilityCostsJson Json?          @map("utility_costs_json")
+  taxAmount        Float          @map("tax_amount")
+  penaltyAmount    Float          @default(0) @map("penalty_amount")
+  totalAmount      Float          @map("total_amount")
+  manualVaNumber   String?        @map("manual_va_number")
+  status           String         @default("UNPAID") // UNPAID, PAID, OVERDUE
+  pdfUrl           String?        @map("pdf_url")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  payments         Payment[]
+
+  @@index([status, dueDate])
+  @@map("invoices")
+}
+
+model Payment {
+  id                  String         @id @default(uuid())
+  invoiceId           String         @map("invoice_id")
+  invoice             Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  payerUserId         String         @map("payer_user_id")
+  payer               User           @relation(fields: [payerUserId], references: [id])
+  amount              Float
+  transferDate        DateTime       @map("transfer_date")
+  proofUrl            String         @map("proof_url")
+  verificationStatus  String         @default("PENDING") // PENDING, VERIFIED, REJECTED
+  verifiedByUserId    String?        @map("verified_by_user_id")
+  verifiedByUser      User?          @relation("PaymentVerifier", fields: [verifiedByUserId], references: [id])
+  verifiedAt          DateTime?      @map("verified_at")
+  verificationNote    String?        @map("verification_note")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+
+model Contract {
+  id             String         @id @default(uuid())
+  requestId      String         @unique @map("request_id")
+  request        RentalRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  contractNo     String         @unique @map("contract_no")
+  signedDate     DateTime?      @map("signed_date")
+  startDate      DateTime       @map("start_date")
+  endDate        DateTime       @map("end_date")
+  contractValue  Float          @map("contract_value")
+  pdfUrl         String?        @map("pdf_url")
+  version        Int            @default(1)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@map("contracts")
+}
+
+model AdditionalAsset {
+  id          String   @id @default(uuid())
+  assetCode   String   @unique @map("asset_code")
+  name        String
+  category    String   // e.g., SOUND_SYSTEM, LIGHTING
+  price       Float
+  stock       Int      @default(1)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("additional_assets")
 }

@@ -1,11 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const assetController = require('./asset.controller');
+const additionalAssetController = require('./additionalAsset.controller');
 const { verifyToken } = require('../../middleware/authJwt');
 const { checkRole } = require('../../middleware/rbac');
 
 // Middleware for Admin only
 const requireAdmin = [verifyToken, checkRole(['ADMIN_ASET', 'PIMPINAN'])];
+
+// Additional Assets (Sprint 7)
+router.get('/additional', verifyToken, additionalAssetController.getAll);
+router.post('/additional/import', requireAdmin, additionalAssetController.importExcel);
 
 // Categories
 router.get('/categories', verifyToken, assetController.getCategories);

@@ -235,6 +235,108 @@ const RentalDetail = () => {
             </div>
           )}
 
+          {/* --- SPRINT 5 & 6: BILLING ACTIONS --- */}
+
+          {/* Admin: Generate Invoice */}
+          {isAdmin && rental.status === 'APPROVED' && (
+            <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-sm shadow-indigo-50">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileText className="mr-2 text-indigo-600" size={20} /> Buat Invoice</h3>
+              <p className="text-sm text-slate-500 mb-4">Pengajuan telah disetujui. Buat invoice agar penyewa dapat melakukan pembayaran.</p>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.post(`/rentals/${id}/invoices`);
+                    queryClient.invalidateQueries(['rental', id]);
+                  } catch (e) {
+                    alert('Gagal membuat invoice: ' + e.response?.data?.message);
+                  }
+                }}
+                className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition"
+              >
+                Generate Invoice
+              </button>
+            </div>
+          )}
+
+          {/* Invoice Info & Upload Payment (Tenant) */}
+          {rental.invoice && (
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center"><FileText className="mr-2 text-slate-600" size={20} /> Tagihan (Invoice)</h3>
+              <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-slate-500">No. Invoice</span>
+                  <span className="font-mono font-bold text-sm text-slate-800">{rental.invoice.invoiceNo}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-slate-500">Total Tagihan</span>
+                  <span className="font-bold text-lg text-blue-600">Rp {rental.invoice.totalAmount.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500">Status</span>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${rental.invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {rental.invoice.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Upload Payment Proof for Tenant */}
+              {isTenant && rental.invoice.status === 'UNPAID' && (
+                <div className="space-y-3 pt-2">
+                  <p className="text-sm text-slate-500">Silakan transfer sesuai tagihan dan unggah bukti pembayarannya di bawah.</p>
+                  <button
+                    onClick={async () => {
+                      const proofUrl = prompt('Masukkan link gambar bukti transfer (Mock):', 'https://mock-image.com/bukti.jpg');
+                      if (proofUrl) {
+                        try {
+                          await api.post(`/invoices/${rental.invoice.id}/payments`, { amount: rental.invoice.totalAmount, transferDate: new Date().toISOString(), proofUrl });
+                          alert('Bukti pembayaran berhasil diunggah!');
+                          queryClient.invalidateQueries(['rental', id]);
+                        } catch (e) {
+                          alert('Gagal: ' + e.response?.data?.message);
+                        }
+                      }
+                    }}
+                    className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition"
+                  >
+                    Upload Bukti Bayar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Admin: Generate Contract */}
+          {isAdmin && rental.status === 'ACTIVE_RENTAL' && (
+            <div className="bg-white p-6 rounded-2xl border border-purple-200 shadow-sm shadow-purple-50">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileSignature className="mr-2 text-purple-600" size={20} /> Buat Kontrak</h3>
+              <p className="text-sm text-slate-500 mb-4">Pembayaran lunas. Generate dokumen kontrak akhir untuk ditandatangani.</p>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.post(`/rentals/${id}/contracts`);
+                    queryClient.invalidateQueries(['rental', id]);
+                  } catch (e) {
+                    alert('Gagal membuat kontrak: ' + e.response?.data?.message);
+                  }
+                }}
+                className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition"
+              >
+                Generate Kontrak Final
+              </button>
+            </div>
+          )}
+
+          {/* Contract Info */}
+          {rental.contract && (
+            <div className="bg-white p-6 rounded-2xl border border-green-200 shadow-sm shadow-green-50">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><CheckCircle className="mr-2 text-green-600" size={20} /> Kontrak Sewa</h3>
+              <p className="text-sm text-slate-600 mb-4">Nomor: <span className="font-mono font-semibold">{rental.contract.contractNo}</span></p>
+              <a href={rental.contract.pdfUrl} target="_blank" rel="noreferrer" className="w-full py-2.5 block text-center bg-white border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">
+                Download PDF Kontrak
+              </a>
+            </div>
+          )}
+
           {/* Status History / Tracking */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 mb-4">Jejak Pengajuan</h3>
