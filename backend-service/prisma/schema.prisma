@@ -50,3 +50,59 @@ model AuditLog {
   @@index([createdAt, module])
   @@map("audit_logs")
 }
+
+model AssetCategory {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  assets      Asset[]
+
+  @@map("asset_categories")
+}
+
+model Asset {
+  id                 String             @id @default(uuid())
+  assetCode          String             @unique @map("asset_code")
+  categoryId         Int                @map("category_id")
+  category           AssetCategory      @relation(fields: [categoryId], references: [id])
+  name               String
+  location           String?
+  capacity           Int?
+  facilitiesJson     Json?              @map("facilities_json")
+  pricingSchemeJson  Json?              @map("pricing_scheme_json")
+  availabilityStatus String             @default("AVAILABLE") @map("availability_status") // AVAILABLE, MAINTENANCE, UNAVAILABLE
+  description        String?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  
+  media              AssetMedia[]
+  availability       AssetAvailability[]
+
+  @@map("assets")
+}
+
+model AssetMedia {
+  id         String   @id @default(uuid())
+  assetId    String   @map("asset_id")
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  mediaType  String   @map("media_type") // IMAGE, DOCUMENT
+  fileUrl    String   @map("file_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("asset_media")
+}
+
+model AssetAvailability {
+  id        String   @id @default(uuid())
+  assetId   String   @map("asset_id")
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("asset_availability")
+}

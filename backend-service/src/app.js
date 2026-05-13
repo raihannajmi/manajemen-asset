@@ -25,6 +25,9 @@ app.get('/health', (req, res) => {
 
 app.use('/api/v1/auth', authRoutes);
 
+const assetRoutes = require('./modules/assets/asset.routes');
+app.use('/api/v1/assets', assetRoutes);
+
 // TODO: Add Modular Routes here
 
 // Error Handling Middleware
