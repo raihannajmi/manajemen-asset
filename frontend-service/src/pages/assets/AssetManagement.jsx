@@ -146,12 +146,14 @@ const AssetManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 md:col-span-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Nama Aset</label>
                   <input
+                    type="text"
                     required
+                    autoComplete="off"
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     placeholder="Gedung Serbaguna"
                     value={formData.name}
@@ -161,7 +163,9 @@ const AssetManagement = () => {
                 <div className="col-span-2 md:col-span-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Kode Aset (Unik)</label>
                   <input
+                    type="text"
                     required
+                    autoComplete="off"
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono"
                     placeholder="GSG-001"
                     value={formData.assetCode}
