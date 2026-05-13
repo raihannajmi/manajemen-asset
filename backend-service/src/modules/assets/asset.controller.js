@@ -45,6 +45,9 @@ class AssetController {
       const data = await assetService.createAsset(req.body);
       res.status(201).json(data);
     } catch (error) {
+      if (error.code === 'P2002') {
+        return res.status(400).json({ message: 'Kode Aset sudah digunakan, silakan gunakan kode lain.' });
+      }
       res.status(400).json({ message: error.message });
     }
   }

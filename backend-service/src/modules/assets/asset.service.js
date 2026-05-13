@@ -24,6 +24,14 @@ class AssetService {
     });
   }
 
+  async clearAssetsCache() {
+    const redis = require('../../config/redis');
+    const keys = await redis.keys('assets:list:*');
+    if (keys.length > 0) {
+      await redis.del(keys);
+    }
+  }
+
   // --- ASSETS ---
   async getAssets(filters = {}) {
     const redis = require('../../config/redis');
@@ -72,18 +80,24 @@ class AssetService {
 
   async createAsset(data) {
     const { id, ...cleanData } = data;
-    return prisma.asset.create({ data: cleanData });
+    const asset = await prisma.asset.create({ data: cleanData });
+    await this.clearAssetsCache();
+    return asset;
   }
 
   async updateAsset(id, data) {
-    return prisma.asset.update({
+    const asset = await prisma.asset.update({
       where: { id },
       data,
     });
+    await this.clearAssetsCache();
+    return asset;
   }
 
   async deleteAsset(id) {
-    return prisma.asset.delete({ where: { id } });
+    const result = await prisma.asset.delete({ where: { id } });
+    await this.clearAssetsCache();
+    return result;
   }
 
   // --- AVAILABILITY ---
