@@ -109,9 +109,12 @@ const AssetDetail = () => {
               )}
             </div>
 
-            <button className="w-full flex items-center justify-center px-6 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200">
+            <Link 
+              to={`/catalog/${id}/book`}
+              className="w-full flex items-center justify-center px-6 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+            >
               <Calendar size={20} className="mr-2" /> Ajukan Penyewaan
-            </button>
+            </Link>
             <p className="text-xs text-center text-slate-400 mt-4">
               Anda bisa memilih tanggal dan melihat ketersediaan pada langkah selanjutnya.
             </p>
