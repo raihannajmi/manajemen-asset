@@ -16,16 +16,7 @@ import ApproveRentals from './pages/approvals/ApproveRentals';
 import RentalDetail from './pages/rentals/RentalDetail';
 import VerifyPayments from './pages/approvals/VerifyPayments';
 import AdditionalAssets from './pages/assets/AdditionalAssets';
-
-// Temporary components
-const DashboardPage = () => (
-  <DashboardLayout>
-    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-      <h1 className="text-2xl font-bold text-slate-800">Ringkasan Dashboard</h1>
-      <p className="text-slate-600 mt-2">Selamat datang di Sistem Manajemen Aset Kampus. Gunakan menu di samping untuk mengelola aset atau pengajuan Anda.</p>
-    </div>
-  </DashboardLayout>
-);
+import Dashboard from './pages/Dashboard';
 
 const queryClient = new QueryClient();
 
@@ -39,7 +30,7 @@ function App() {
           <Route path="/login" element={!accessToken ? <LoginPage /> : <Navigate to="/dashboard" />} />
           <Route path="/register" element={!accessToken ? <RegisterPage /> : <Navigate to="/dashboard" />} />
           
-          <Route path="/dashboard" element={accessToken ? <DashboardPage /> : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={accessToken ? <DashboardLayout><Dashboard /></DashboardLayout> : <Navigate to="/login" />} />
           
           <Route path="/categories" element={accessToken ? <DashboardLayout><AssetCategory /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/assets" element={accessToken ? <DashboardLayout><AssetManagement /></DashboardLayout> : <Navigate to="/login" />} />

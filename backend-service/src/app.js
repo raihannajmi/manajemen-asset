@@ -34,6 +34,9 @@ app.use('/api/v1/rentals', rentalRoutes);
 const billingRoutes = require('./modules/billing/billing.routes');
 app.use('/api/v1', billingRoutes);
 
+const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+app.use('/api/v1/dashboard', dashboardRoutes);
+
 // TODO: Add Modular Routes here
 
 // Error Handling Middleware
