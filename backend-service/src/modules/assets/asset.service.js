@@ -58,24 +58,54 @@ class AssetService {
       include: {
         category: true,
         media: true,
+        rentalRequests: {
+          where: {
+            status: 'ACTIVE_RENTAL'
+          }
+        }
       },
     });
 
-    // Save to Cache (expire in 1 hour)
-    await redis.set(cacheKey, JSON.stringify(assets), 'EX', 3600);
+    const mappedAssets = assets.map(asset => {
+      const activeRentalsCount = asset.rentalRequests.length;
+      const mapped = {
+        ...asset,
+        activeRentalsCount,
+        availableQuantity: Math.max(0, (asset.capacity || 1) - activeRentalsCount)
+      };
+      delete mapped.rentalRequests;
+      return mapped;
+    });
 
-    return assets;
+    // Save to Cache (expire in 1 hour)
+    await redis.set(cacheKey, JSON.stringify(mappedAssets), 'EX', 3600);
+
+    return mappedAssets;
   }
 
   async getAssetById(id) {
-    return prisma.asset.findUnique({
+    const asset = await prisma.asset.findUnique({
       where: { id },
       include: {
         category: true,
         media: true,
         availability: true,
+        rentalRequests: {
+          where: {
+            status: 'ACTIVE_RENTAL'
+          }
+        }
       },
     });
+
+    if (asset) {
+      const activeRentalsCount = asset.rentalRequests.length;
+      asset.activeRentalsCount = activeRentalsCount;
+      asset.availableQuantity = Math.max(0, (asset.capacity || 1) - activeRentalsCount);
+      delete asset.rentalRequests; // don't expose full rental data here unnecessarily
+    }
+
+    return asset;
   }
 
   async createAsset(data) {

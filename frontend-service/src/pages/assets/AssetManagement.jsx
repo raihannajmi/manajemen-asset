@@ -18,7 +18,7 @@ const assetSchema = z.object({
   categoryId: z.coerce.number().min(1, 'Pilih kategori'),
   description: z.string().optional().nullable(),
   location: z.string().min(3, 'Lokasi minimal 3 karakter'),
-  capacity: z.coerce.number().min(1, 'Kapasitas minimal 1'),
+  capacity: z.coerce.number().min(1, 'Quantity minimal 1'),
   availabilityStatus: z.enum(['AVAILABLE', 'MAINTENANCE', 'UNAVAILABLE']),
   pricingSchemeJson: z.object({
     unit: z.enum(['hour', 'day', 'week', 'month']),
@@ -361,7 +361,7 @@ const AssetManagement = () => {
                     {errors.location && <p className="mt-1 text-xs text-red-500">{errors.location.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Kapasitas</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Quantity (Stok)</label>
                     <input
                       type="number"
                       {...register('capacity')}

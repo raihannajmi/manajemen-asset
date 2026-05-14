@@ -65,7 +65,7 @@ const AssetCatalog = () => {
                   </div>
                   <div className="flex items-center text-sm text-slate-500">
                     <Users size={16} className="mr-2 text-slate-400" />
-                    Kapasitas: {asset.capacity ? `${asset.capacity} orang` : '-'}
+                    <span className="font-semibold text-slate-700">Tersedia: {asset.availableQuantity} / {asset.capacity}</span>
                   </div>
                 </div>
                 

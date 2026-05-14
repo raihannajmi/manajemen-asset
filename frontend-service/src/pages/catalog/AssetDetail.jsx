@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Users, Calendar, ArrowLeft, Loader2, CheckCircle2, Clock, DollarSign, FileText } from 'lucide-react';
+import { MapPin, Users, Calendar, ArrowLeft, Loader2, CheckCircle2, Clock, DollarSign, FileText, Package } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import api from '../../lib/axios';
 
@@ -90,8 +90,8 @@ const AssetDetail = () => {
                 {asset.location || 'Lokasi tidak disebutkan'}
               </div>
               <div className="flex items-center text-slate-600 bg-slate-50 px-4 py-2 rounded-xl">
-                <Users size={18} className="mr-2 text-slate-400" />
-                Kapasitas {asset.capacity || '-'} orang
+                <Package size={18} className="mr-2 text-slate-400" />
+                Tersedia: <strong className="ml-1 text-slate-900">{asset.availableQuantity}</strong><span className="mx-1 text-slate-400">/</span>{asset.capacity}
               </div>
             </div>
           </div>
