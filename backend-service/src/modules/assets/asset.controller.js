@@ -91,7 +91,7 @@ class AssetController {
       const { getPublicUrl } = require('../../shared/utils/s3Uploader');
       const fileUrl = getPublicUrl(req.file.key);
       
-      const { prisma } = require('../../config/db');
+      const prisma = require('../../config/db');
       const media = await prisma.assetMedia.create({
         data: {
           assetId: req.params.id,
@@ -113,7 +113,7 @@ class AssetController {
         return res.status(400).json({ message: 'Parameter start dan end wajib diisi (format ISO datetime)' });
       }
 
-      const { prisma } = require('../../config/db');
+      const prisma = require('../../config/db');
       const asset = await prisma.asset.findUnique({
         where: { id },
         select: { pricingSchemeJson: true }
@@ -138,7 +138,7 @@ class AssetController {
   async getRentalHistory(req, res) {
     try {
       const { id } = req.params;
-      const { prisma } = require('../../config/db');
+      const prisma = require('../../config/db');
       const history = await prisma.rentalRequest.findMany({
         where: { assetId: id },
         orderBy: { createdAt: 'desc' },
@@ -158,7 +158,7 @@ class AssetController {
   async deleteMedia(req, res) {
     try {
       const { mediaId } = req.params;
-      const { prisma } = require('../../config/db');
+      const prisma = require('../../config/db');
       await prisma.assetMedia.delete({ where: { id: mediaId } });
       res.json({ message: 'Media deleted successfully' });
     } catch (error) {

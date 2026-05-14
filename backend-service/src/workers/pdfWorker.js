@@ -4,7 +4,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const { s3Client, getPublicUrl } = require('../shared/utils/s3Uploader');
 const { PutObjectCommand } = require('@aws-sdk/client-s3');
-const { prisma } = require('../config/db');
+const prisma = require('../config/db');
 const redisConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,
