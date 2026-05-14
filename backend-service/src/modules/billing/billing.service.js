@@ -1,4 +1,5 @@
 const prisma = require('../../config/db');
+const { calculatePrice } = require('../../shared/utils/pricingEngine');
 
 class BillingService {
   
@@ -18,23 +19,39 @@ class BillingService {
     const existing = await prisma.invoice.findUnique({ where: { requestId } });
     if (existing) throw new Error('Invoice sudah pernah dibuat untuk pengajuan ini.');
 
-    // Calculate duration in days (naive calculation for mockup)
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const diff = new Date(request.endDatetime) - new Date(request.startDatetime);
-    const days = Math.max(1, Math.ceil(diff / msPerDay));
-
-    // Pricing from asset
-    const pricePerDay = request.asset.pricingSchemeJson?.dailyRate || 1000000;
-    const subtotal = days * pricePerDay;
+    // Pricing calculation
+    let subtotal = 0;
+    let taxAmount = 0;
+    
+    const priceResult = calculatePrice(request.startDatetime, request.endDatetime, request.asset.pricingSchemeJson);
+    
+    if (priceResult) {
+       subtotal = priceResult.subtotal;
+       taxAmount = priceResult.tax;
+    } else {
+       // Fallback to naive calculation for mockup
+       const msPerDay = 1000 * 60 * 60 * 24;
+       const diff = new Date(request.endDatetime) - new Date(request.startDatetime);
+       const days = Math.max(1, Math.ceil(diff / msPerDay));
+       const pricePerDay = 1000000;
+       subtotal = days * pricePerDay;
+       taxAmount = subtotal * 0.11; // 11% PPN fallback
+    }
 
     // Additional utilities
     let utilitySum = 0;
     if (utilityCosts && Array.isArray(utilityCosts)) {
       utilitySum = utilityCosts.reduce((sum, item) => sum + (item.amount || 0), 0);
     }
+    
+    // add utility to subtotal before tax if we want tax on utility. 
+    // for now let's say tax is already handled or utility is non-taxable
+    // wait, old logic: const taxAmount = (subtotal + utilitySum) * 0.11;
+    if (!priceResult) {
+       taxAmount = (subtotal + utilitySum) * 0.11;
+    }
 
-    const taxAmount = (subtotal + utilitySum) * 0.11; // 11% PPN
-    const totalAmount = subtotal + utilitySum + taxAmount;
+    const totalAmount = subtotal + utilitySum + taxAmount + (priceResult ? priceResult.deposit : 0);
 
     const issueDate = new Date();
     const dueDate = new Date(issueDate.getTime() + 3 * 24 * 60 * 60 * 1000); // +3 Days

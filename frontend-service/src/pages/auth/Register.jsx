@@ -1,42 +1,52 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import api from '../../lib/axios';
 import useAuthStore from '../../store/useAuthStore';
 
+const registerSchema = z.object({
+  fullName: z.string().min(3, 'Nama lengkap minimal 3 karakter').max(100, 'Nama lengkap maksimal 100 karakter'),
+  email: z.string().email('Format email tidak valid'),
+  password: z.string().min(8, 'Password minimal 8 karakter'),
+  phone: z.string().regex(/^[0-9+]+$/, 'Nomor telepon hanya boleh berisi angka dan +').optional().or(z.literal('')),
+  organization: z.string().optional().or(z.literal(''))
+});
+
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    phone: '',
-    organization: '',
-  });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [apiError, setApiError] = useState('');
   
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      phone: '',
+      organization: '',
+    }
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setLoading(true);
-    setError('');
+    setApiError('');
     
     try {
       const response = await api.post('/auth/register', { 
-        ...formData,
+        ...data,
         roleCode: 'PENYEWA' // Default for registration
       });
       const { user, accessToken, refreshToken } = response.data;
       setAuth(user, accessToken, refreshToken);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setApiError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -55,10 +65,10 @@ const RegisterPage = () => {
           </p>
         </div>
         
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          {error && (
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>
+          {apiError && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
+              {apiError}
             </div>
           )}
           
@@ -66,64 +76,56 @@ const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700">Nama Lengkap</label>
               <input
-                name="fullName"
+                {...register('fullName')}
                 type="text"
-                required
-                className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                className={`mt-1 block w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900 ${errors.fullName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200'}`}
                 placeholder="John Doe"
-                value={formData.fullName}
-                onChange={handleChange}
               />
+              {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName.message}</p>}
             </div>
             
             <div>
               <label className="block text-sm font-medium text-slate-700">Email Address</label>
               <input
-                name="email"
+                {...register('email')}
                 type="email"
-                required
-                className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                className={`mt-1 block w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900 ${errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200'}`}
                 placeholder="john@example.com"
-                value={formData.email}
-                onChange={handleChange}
               />
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700">Password</label>
               <input
-                name="password"
+                {...register('password')}
                 type="password"
-                required
-                className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                className={`mt-1 block w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900 ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200'}`}
                 placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
               />
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700">No. Telepon</label>
                 <input
-                  name="phone"
+                  {...register('phone')}
                   type="text"
-                  className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                  className={`mt-1 block w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900 ${errors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200'}`}
                   placeholder="0812..."
-                  value={formData.phone}
-                  onChange={handleChange}
                 />
+                {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700">Organisasi</label>
                 <input
-                  name="organization"
+                  {...register('organization')}
                   type="text"
-                  className="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                  className={`mt-1 block w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-900 ${errors.organization ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200'}`}
                   placeholder="UKM / Instansi"
-                  value={formData.organization}
-                  onChange={handleChange}
                 />
+                {errors.organization && <p className="mt-1 text-xs text-red-500">{errors.organization.message}</p>}
               </div>
             </div>
           </div>
@@ -134,7 +136,7 @@ const RegisterPage = () => {
               disabled={loading}
               className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70"
             >
-              {loading ? <Loader2 className="animate-spin mr-2" size={20} /> : null}
+              {loading && <Loader2 className="animate-spin mr-2" size={20} />}
               {loading ? 'Mendaftar...' : 'Daftar Sekarang'}
             </button>
           </div>

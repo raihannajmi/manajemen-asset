@@ -70,7 +70,7 @@ class RentalService {
     const overlapping = await prisma.rentalRequest.findFirst({
       where: {
         assetId: request.assetId,
-        status: { in: ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED'] },
+        status: { in: ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED', 'INVOICE_GENERATED', 'WAITING_PAYMENT', 'ACTIVE_RENTAL'] },
         id: { not: requestId },
         AND: [
           { startDatetime: { lt: request.endDatetime } },

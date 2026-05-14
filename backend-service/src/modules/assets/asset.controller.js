@@ -101,6 +101,36 @@ class AssetController {
       res.status(400).json({ message: error.message });
     }
   }
+  async getPriceEstimate(req, res) {
+    try {
+      const { id } = req.params;
+      const { start, end } = req.query;
+
+      if (!start || !end) {
+        return res.status(400).json({ message: 'Parameter start dan end wajib diisi (format ISO datetime)' });
+      }
+
+      const asset = await prisma.asset.findUnique({
+        where: { id },
+        select: { pricingSchemeJson: true }
+      });
+
+      if (!asset) {
+        return res.status(404).json({ message: 'Aset tidak ditemukan' });
+      }
+
+      const { calculatePrice } = require('../../shared/utils/pricingEngine');
+      try {
+        const estimate = calculatePrice(start, end, asset.pricingSchemeJson);
+        res.status(200).json(estimate || { message: 'Skema harga tidak tersedia untuk aset ini' });
+      } catch (calcError) {
+         res.status(400).json({ message: calcError.message });
+      }
+
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
 }
 
 module.exports = new AssetController();

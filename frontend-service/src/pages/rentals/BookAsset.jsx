@@ -1,25 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Calendar, Users, FileText, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import api from '../../lib/axios';
+
+const bookAssetSchema = z.object({
+  eventName: z.string().min(3, 'Nama acara minimal 3 karakter').max(100, 'Nama acara maksimal 100 karakter'),
+  startDatetime: z.string().min(1, 'Waktu mulai wajib diisi'),
+  endDatetime: z.string().min(1, 'Waktu selesai wajib diisi'),
+  participantCount: z.coerce.number().min(1, 'Peserta minimal 1 orang'),
+  purpose: z.string().min(10, 'Tujuan/Keterangan minimal 10 karakter'),
+}).refine(data => {
+  if (data.startDatetime && data.endDatetime) {
+    return new Date(data.endDatetime) > new Date(data.startDatetime);
+  }
+  return true;
+}, {
+  message: 'Waktu selesai harus lebih besar dari waktu mulai',
+  path: ['endDatetime']
+});
+
+const PriceEstimate = ({ assetId, start, end }) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['price-estimate', assetId, start, end],
+    queryFn: async () => {
+      const res = await api.get(`/assets/${assetId}/price-estimate?start=${start}&end=${end}`);
+      return res.data;
+    },
+    retry: false
+  });
+
+  if (isLoading) return <div className="text-sm text-slate-500 animate-pulse mt-4">Menghitung estimasi biaya...</div>;
+  if (error || !data || data.message) return null;
+
+  return (
+    <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl mt-6">
+      <h3 className="text-sm font-bold text-indigo-900 mb-2">Estimasi Biaya Sewa</h3>
+      <div className="space-y-1 text-sm text-indigo-800">
+        <div className="flex justify-between">
+          <span>Durasi Sewa:</span>
+          <span className="font-semibold">{data.units} {data.unitType}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>Rp {data.subtotal?.toLocaleString('id-ID')}</span>
+        </div>
+        {data.tax > 0 && (
+          <div className="flex justify-between text-indigo-600">
+            <span>Pajak (PPN):</span>
+            <span>Rp {data.tax?.toLocaleString('id-ID')}</span>
+          </div>
+        )}
+        {data.deposit > 0 && (
+          <div className="flex justify-between text-orange-600">
+            <span>Deposit (Refundable):</span>
+            <span>Rp {data.deposit?.toLocaleString('id-ID')}</span>
+          </div>
+        )}
+        <div className="flex justify-between pt-2 mt-2 border-t border-indigo-200 font-bold text-base">
+          <span>Estimasi Total:</span>
+          <span>Rp {data.total?.toLocaleString('id-ID')}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const BookAsset = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = window.location.pathname.includes('/rentals/');
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    eventName: '',
-    startDatetime: '',
-    endDatetime: '',
-    participantCount: '',
-    purpose: '',
-  });
   const [docFile, setDocFile] = useState(null);
   const [draftId, setDraftId] = useState(isEditing ? id : null);
   const [error, setError] = useState('');
+
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+    resolver: zodResolver(bookAssetSchema),
+    defaultValues: {
+      eventName: '',
+      startDatetime: '',
+      endDatetime: '',
+      participantCount: '',
+      purpose: '',
+    }
+  });
+
+  const formData = watch(); // For displaying in step 3
 
   // Fetch Existing Rental if Editing
   const { data: rentalData, isLoading: isLoadingRental } = useQuery({
@@ -32,10 +103,10 @@ const BookAsset = () => {
   });
 
   // Update form data when rental data is loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (rentalData && isEditing) {
       try {
-        setFormData({
+        reset({
           eventName: rentalData.eventName || '',
           startDatetime: rentalData.startDatetime ? new Date(rentalData.startDatetime).toISOString().slice(0, 16) : '',
           endDatetime: rentalData.endDatetime ? new Date(rentalData.endDatetime).toISOString().slice(0, 16) : '',
@@ -46,7 +117,7 @@ const BookAsset = () => {
         console.error("Error parsing dates", e);
       }
     }
-  }, [rentalData, isEditing]);
+  }, [rentalData, isEditing, reset]);
 
   // Fetch Asset Detail
   const { data: asset, isLoading: isLoadingAsset } = useQuery({
@@ -149,24 +220,27 @@ const BookAsset = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
         {step === 1 && (
-          <form onSubmit={handleSave} className="space-y-6">
+          <form onSubmit={handleSubmit((data) => saveMutation.mutate(data))} className="space-y-6">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
               <Calendar className="mr-2 text-blue-600" /> {isEditing ? 'Perbarui Detail Acara' : 'Detail Acara'}
             </h2>
             
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Nama Acara</label>
-              <input required type="text" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500" value={formData.eventName} onChange={e => setFormData({...formData, eventName: e.target.value})} placeholder="Contoh: Seminar Nasional Teknologi" />
+              <input type="text" {...register('eventName')} className={`w-full p-3 bg-slate-50 border rounded-xl focus:ring-blue-500 focus:border-blue-500 ${errors.eventName ? 'border-red-500' : 'border-slate-200'}`} placeholder="Contoh: Seminar Nasional Teknologi" />
+              {errors.eventName && <p className="mt-1 text-xs text-red-500">{errors.eventName.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Waktu Mulai</label>
-                <input required type="datetime-local" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={formData.startDatetime} onChange={e => setFormData({...formData, startDatetime: e.target.value})} />
+                <input type="datetime-local" {...register('startDatetime')} className={`w-full p-3 bg-slate-50 border rounded-xl ${errors.startDatetime ? 'border-red-500' : 'border-slate-200'}`} />
+                {errors.startDatetime && <p className="mt-1 text-xs text-red-500">{errors.startDatetime.message}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Waktu Selesai</label>
-                <input required type="datetime-local" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={formData.endDatetime} onChange={e => setFormData({...formData, endDatetime: e.target.value})} />
+                <input type="datetime-local" {...register('endDatetime')} className={`w-full p-3 bg-slate-50 border rounded-xl ${errors.endDatetime ? 'border-red-500' : 'border-slate-200'}`} />
+                {errors.endDatetime && <p className="mt-1 text-xs text-red-500">{errors.endDatetime.message}</p>}
               </div>
             </div>
 
@@ -175,15 +249,25 @@ const BookAsset = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Estimasi Peserta</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-3.5 text-slate-400" size={18} />
-                  <input required type="number" className="w-full pl-10 p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Jumlah orang" value={formData.participantCount} onChange={e => setFormData({...formData, participantCount: e.target.value})} />
+                  <input type="number" {...register('participantCount')} className={`w-full pl-10 p-3 bg-slate-50 border rounded-xl ${errors.participantCount ? 'border-red-500' : 'border-slate-200'}`} placeholder="Jumlah orang" />
                 </div>
+                {errors.participantCount && <p className="mt-1 text-xs text-red-500">{errors.participantCount.message}</p>}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Tujuan / Keterangan</label>
-              <textarea required rows={3} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Deskripsikan tujuan penyewaan..." value={formData.purpose} onChange={e => setFormData({...formData, purpose: e.target.value})}></textarea>
+              <textarea rows={3} {...register('purpose')} className={`w-full p-3 bg-slate-50 border rounded-xl ${errors.purpose ? 'border-red-500' : 'border-slate-200'}`} placeholder="Deskripsikan tujuan penyewaan..."></textarea>
+              {errors.purpose && <p className="mt-1 text-xs text-red-500">{errors.purpose.message}</p>}
             </div>
+
+            {formData.startDatetime && formData.endDatetime && !errors.endDatetime && (
+              <PriceEstimate 
+                assetId={id} 
+                start={formData.startDatetime} 
+                end={formData.endDatetime} 
+              />
+            )}
 
             <div className="pt-4 flex justify-end">
               <button type="submit" disabled={saveMutation.isPending} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center">

@@ -16,15 +16,21 @@ router.post('/additional/import', requireAdmin, additionalAssetController.import
 router.get('/categories', verifyToken, assetController.getCategories);
 router.post('/categories', requireAdmin, assetController.createCategory);
 
+const validateRequest = require('../../middleware/validateRequest');
+const { createAssetSchema, updateAssetSchema } = require('../../shared/validators/asset.validation');
+
 // Assets
 router.get('/', verifyToken, assetController.getAssets);
 router.get('/:id', verifyToken, assetController.getAssetById);
-router.post('/', requireAdmin, assetController.createAsset);
-router.patch('/:id', requireAdmin, assetController.updateAsset);
+router.post('/', requireAdmin, validateRequest(createAssetSchema), assetController.createAsset);
+router.patch('/:id', requireAdmin, validateRequest(updateAssetSchema), assetController.updateAsset);
 router.delete('/:id', requireAdmin, assetController.deleteAsset);
 
 // Availability
 router.get('/:id/availability', verifyToken, assetController.checkAvailability);
+
+// Price Estimate
+router.get('/:id/price-estimate', verifyToken, assetController.getPriceEstimate);
 
 // Media (Mocked Upload for now, waiting for AWS R2 integration)
 router.post('/:id/media', requireAdmin, assetController.uploadMedia);
