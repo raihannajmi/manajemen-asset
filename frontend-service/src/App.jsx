@@ -51,6 +51,7 @@ function App() {
           <Route path="/verify-rentals" element={accessToken ? <DashboardLayout><VerifyRentals /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/approvals" element={accessToken ? <DashboardLayout><ApproveRentals /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/rentals/:id" element={accessToken ? <DashboardLayout><RentalDetail /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/rentals/:id/edit" element={accessToken ? <DashboardLayout><BookAsset /></DashboardLayout> : <Navigate to="/login" />} />
           
           <Route path="/verify-payments" element={accessToken ? <DashboardLayout><VerifyPayments /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/additional-assets" element={accessToken ? <DashboardLayout><AdditionalAssets /></DashboardLayout> : <Navigate to="/login" />} />

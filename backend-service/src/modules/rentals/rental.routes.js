@@ -14,6 +14,8 @@ router.get('/:id', rentalController.getRentalById);
 // Sprint 3: Tenant Actions
 // Create draft request
 router.post('/', checkRole(['PENYEWA']), rentalController.createDraft);
+// Update draft/revision
+router.put('/:id', checkRole(['PENYEWA']), rentalController.updateDraft);
 // Upload document
 router.post('/:id/documents', checkRole(['PENYEWA']), rentalController.uploadDocument);
 // Submit request

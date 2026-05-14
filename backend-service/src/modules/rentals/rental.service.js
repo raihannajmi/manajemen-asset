@@ -26,6 +26,23 @@ class RentalService {
     });
   }
 
+  async updateDraft(requestId, tenantUserId, data) {
+    const request = await prisma.rentalRequest.findUnique({ where: { id: requestId } });
+    if (!request || request.tenantUserId !== tenantUserId) throw new Error('Request not found');
+    if (request.status !== 'DRAFT' && request.status !== 'REVISION') throw new Error('Cannot update request in current status');
+
+    return prisma.rentalRequest.update({
+      where: { id: requestId },
+      data: {
+        eventName: data.eventName,
+        startDatetime: new Date(data.startDatetime),
+        endDatetime: new Date(data.endDatetime),
+        participantCount: parseInt(data.participantCount),
+        purpose: data.purpose,
+      }
+    });
+  }
+
   async uploadDocument(requestId, data) {
     return prisma.rentalRequestDocument.create({
       data: {

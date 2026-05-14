@@ -8,6 +8,7 @@ import api from '../../lib/axios';
 const BookAsset = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isEditing = window.location.pathname.includes('/rentals/');
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     eventName: '',
@@ -17,27 +18,55 @@ const BookAsset = () => {
     purpose: '',
   });
   const [docFile, setDocFile] = useState(null);
-  const [draftId, setDraftId] = useState(null);
+  const [draftId, setDraftId] = useState(isEditing ? id : null);
   const [error, setError] = useState('');
 
-  const { data: asset, isLoading } = useQuery({
-    queryKey: ['asset', id],
+  // Fetch Existing Rental if Editing
+  const { isLoading: isLoadingRental } = useQuery({
+    queryKey: ['rental', id],
     queryFn: async () => {
+      const res = await api.get(`/rentals/${id}`);
+      const d = res.data;
+      setFormData({
+        eventName: d.eventName,
+        startDatetime: new Date(d.startDatetime).toISOString().slice(0, 16),
+        endDatetime: new Date(d.endDatetime).toISOString().slice(0, 16),
+        participantCount: d.participantCount,
+        purpose: d.purpose,
+      });
+      return d;
+    },
+    enabled: isEditing
+  });
+
+  // Fetch Asset Detail
+  const { data: asset, isLoading: isLoadingAsset } = useQuery({
+    queryKey: ['asset', isEditing ? 'from-rental' : id],
+    queryFn: async () => {
+      if (isEditing) {
+        const res = await api.get(`/rentals/${id}`);
+        return res.data.asset;
+      }
       const res = await api.get(`/assets/${id}`);
       return res.data;
     }
   });
 
-  const createDraftMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (data) => {
-      const res = await api.post('/rentals', { ...data, assetId: id });
-      return res.data;
+      if (isEditing) {
+        const res = await api.put(`/rentals/${id}`, data);
+        return res.data;
+      } else {
+        const res = await api.post('/rentals', { ...data, assetId: id });
+        return res.data;
+      }
     },
     onSuccess: (data) => {
       setDraftId(data.id);
       setStep(2);
     },
-    onError: (err) => setError(err.response?.data?.message || 'Gagal menyimpan draft')
+    onError: (err) => setError(err.response?.data?.message || 'Gagal menyimpan data')
   });
 
   const uploadDocMutation = useMutation({
@@ -66,23 +95,29 @@ const BookAsset = () => {
     onError: (err) => setError(err.response?.data?.message || 'Gagal submit pengajuan')
   });
 
-  const handleCreateDraft = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
     setError('');
-    createDraftMutation.mutate(formData);
+    saveMutation.mutate(formData);
   };
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={32} /></div>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      <Link to={`/catalog/${id}`} className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600">
-        <ArrowLeft size={16} className="mr-2" /> Kembali ke Detail
-      </Link>
+      {isEditing ? (
+        <Link to={`/rentals/${id}`} className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600">
+          <ArrowLeft size={16} className="mr-2" /> Kembali ke Detail
+        </Link>
+      ) : (
+        <Link to={`/catalog/${id}`} className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600">
+          <ArrowLeft size={16} className="mr-2" /> Kembali ke Detail
+        </Link>
+      )}
 
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Form Pengajuan Sewa</h1>
-        <p className="text-slate-500 mt-1">Anda akan menyewa: <span className="font-bold text-slate-800">{asset?.name}</span></p>
+        <h1 className="text-3xl font-bold text-slate-900">{isEditing ? 'Revisi Pengajuan' : 'Form Pengajuan Sewa'}</h1>
+        <p className="text-slate-500 mt-1">Aset: <span className="font-bold text-slate-800">{asset?.name}</span></p>
       </div>
 
       {/* Progress Steps */}
@@ -103,9 +138,9 @@ const BookAsset = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
         {step === 1 && (
-          <form onSubmit={handleCreateDraft} className="space-y-6">
+          <form onSubmit={handleSave} className="space-y-6">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
-              <Calendar className="mr-2 text-blue-600" /> Detail Acara
+              <Calendar className="mr-2 text-blue-600" /> {isEditing ? 'Perbarui Detail Acara' : 'Detail Acara'}
             </h2>
             
             <div>
@@ -140,8 +175,8 @@ const BookAsset = () => {
             </div>
 
             <div className="pt-4 flex justify-end">
-              <button type="submit" disabled={createDraftMutation.isPending} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center">
-                {createDraftMutation.isPending && <Loader2 className="animate-spin mr-2" size={18} />} Selanjutnya
+              <button type="submit" disabled={saveMutation.isPending} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center">
+                {saveMutation.isPending && <Loader2 className="animate-spin mr-2" size={18} />} Selanjutnya
               </button>
             </div>
           </form>

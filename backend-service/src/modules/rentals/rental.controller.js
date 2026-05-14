@@ -41,6 +41,15 @@ class RentalController {
     }
   }
 
+  async updateDraft(req, res) {
+    try {
+      const data = await rentalService.updateDraft(req.params.id, req.user.id, req.body);
+      res.json(data);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
   async uploadDocument(req, res) {
     try {
       // Mock upload for now

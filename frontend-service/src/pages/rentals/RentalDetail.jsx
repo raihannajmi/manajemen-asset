@@ -230,6 +230,14 @@ const RentalDetail = () => {
                   <p className={`text-sm mt-1 ${rental.status === 'REJECTED' ? 'text-red-600' : 'text-orange-700'}`}>
                     Catatan Pimpinan: "{rental.statusHistory[0]?.note || '-'}"
                   </p>
+                  {rental.status === 'REVISION' && (
+                    <button
+                      onClick={() => navigate(`/rentals/${id}/edit`)}
+                      className="mt-4 px-6 py-2 bg-orange-600 text-white font-bold rounded-xl hover:bg-orange-700 transition shadow-sm"
+                    >
+                      Edit & Submit Ulang
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
