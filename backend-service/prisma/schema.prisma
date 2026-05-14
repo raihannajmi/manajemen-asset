@@ -151,6 +151,7 @@ model RentalRequestDocument {
   verificationNote String?        @map("verification_note")
   createdAt        DateTime       @default(now()) @map("created_at")
 
+  @@unique([requestId, docType])
   @@map("rental_request_documents")
 }
 

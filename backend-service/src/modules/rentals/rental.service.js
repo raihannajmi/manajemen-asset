@@ -44,6 +44,14 @@ class RentalService {
   }
 
   async uploadDocument(requestId, data) {
+    // Delete existing document of same type for this request to prevent duplicates
+    await prisma.rentalRequestDocument.deleteMany({
+      where: {
+        requestId,
+        docType: data.docType
+      }
+    });
+
     return prisma.rentalRequestDocument.create({
       data: {
         requestId,
