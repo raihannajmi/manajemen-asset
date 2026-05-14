@@ -82,7 +82,7 @@ const RentalDetail = () => {
           <p className="text-slate-500 mt-1 font-mono">{rental.requestNo}</p>
         </div>
         <div className={`px-4 py-2 rounded-full font-bold text-sm ${STATUS_BADGES[rental.status]}`}>
-          {rental.status.replace('_', ' ')}
+          {rental.status?.replace(/_/g, ' ')}
         </div>
       </div>
 
@@ -451,7 +451,11 @@ const RentalDetail = () => {
                                 {entry.actor && (
                                   <span className="text-xs text-slate-500 flex items-center gap-1">
                                     <Shield size={10} /> {entry.actor}
-                                    {entry.actorRole && <span className="text-slate-400">({entry.actorRole})</span>}
+                                    {entry.actorRole && (
+                                      <span className="text-slate-400">
+                                        ({typeof entry.actorRole === 'object' ? (entry.actorRole?.name || entry.actorRole?.code) : entry.actorRole})
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                               </>

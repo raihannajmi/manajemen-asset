@@ -158,32 +158,50 @@ const AssetDetail = () => {
                 <div className="space-y-3">
                   {rentalHistory.map(rental => (
                     <Link to={`/rentals/${rental.id}`} key={rental.id}
-                      className="flex items-start gap-4 p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-sm transition-all"
+                      className="flex items-start gap-4 p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group"
                     >
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <FileText size={18} className="text-blue-600" />
+                      <div className="flex-shrink-0 w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                        <FileText size={20} className="text-blue-600 group-hover:text-white transition-colors" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-bold text-slate-900 truncate">{rental.tenantUser?.fullName}</span>
-                          <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${STATUS_BADGES[rental.status] || 'bg-slate-100 text-slate-600'}`}>
+                          <div>
+                            <span className="text-sm font-bold text-slate-900">{rental.tenantUser?.fullName}</span>
+                            <span className="mx-2 text-slate-300 text-xs">|</span>
+                            <span className="text-xs text-slate-500 font-mono">{rental.requestNo}</span>
+                          </div>
+                          <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${STATUS_BADGES[rental.status] || 'bg-slate-100 text-slate-600'}`}>
                             {rental.status.replace(/_/g, ' ')}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5">{rental.tenantUser?.organization || rental.tenantUser?.email}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Clock size={12} />
-                            {new Date(rental.startDatetime).toLocaleDateString('id-ID')} – {new Date(rental.endDatetime).toLocaleDateString('id-ID')}
-                          </span>
-                          {rental.invoice?.totalAmount && (
-                            <span className="flex items-center gap-1 font-semibold text-blue-600">
-                              <DollarSign size={12} />
-                              Rp {rental.invoice.totalAmount.toLocaleString('id-ID')}
+                        
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <Clock size={14} className="text-slate-400" />
+                            <span className="font-medium">
+                              {new Date(rental.startDatetime).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} – {new Date(rental.endDatetime).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
-                          )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <Calendar size={14} className="text-slate-400" />
+                            <span>Durasi: {Math.ceil((new Date(rental.endDatetime) - new Date(rental.startDatetime)) / (1000 * 60 * 60 * 24))} Hari</span>
+                          </div>
                         </div>
-                        <p className="text-xs text-slate-600 mt-1 font-medium">{rental.eventName}</p>
+
+                        <div className="mt-3 p-3 bg-slate-50 rounded-xl">
+                          <p className="text-xs font-bold text-slate-700">{rental.eventName}</p>
+                          <p className="text-xs text-slate-500 mt-1 italic leading-relaxed">
+                            "{rental.purpose || 'Tanpa keterangan tujuan'}"
+                          </p>
+                        </div>
+
+                        {rental.invoice?.totalAmount && (
+                          <div className="mt-3 flex items-center justify-end">
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                              Revenue: Rp {rental.invoice.totalAmount.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </Link>
                   ))}

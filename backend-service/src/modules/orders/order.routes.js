@@ -88,9 +88,6 @@ router.get('/:id/timeline', requireAdminOrPimpinan, async (req, res) => {
     const statusHistory = await prisma.statusHistory.findMany({
       where: { requestId: id },
       orderBy: { createdAt: 'asc' },
-      include: {
-        changedByUser: { select: { fullName: true, role: true } }
-      }
     });
 
     // Get ALL audit logs related to this rental request (by entityId OR by associated invoice/contract)
@@ -110,14 +107,37 @@ router.get('/:id/timeline', requireAdminOrPimpinan, async (req, res) => {
       orderBy: { createdAt: 'asc' },
     });
 
+    // Fetch all relevant users for actor resolution
+    const actorUserIds = new Set([
+      ...statusHistory.map(sh => sh.changedBy).filter(Boolean),
+      ...auditLogs.map(al => al.actorUserId).filter(Boolean)
+    ]);
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: Array.from(actorUserIds) } },
+      select: { 
+        id: true, 
+        fullName: true, 
+        role: { select: { code: true } } 
+      }
+    });
+
+    const userMap = users.reduce((acc, u) => ({ 
+      ...acc, 
+      [u.id]: { 
+        fullName: u.fullName, 
+        role: u.role.code 
+      } 
+    }), {});
+
     // Merge and sort everything by createdAt
     const timelineEntries = [
       ...statusHistory.map(sh => ({
         type: 'STATUS_CHANGE',
         id: sh.id,
         action: sh.toStatus,
-        actor: sh.changedByUser?.fullName || 'System',
-        actorRole: sh.changedByUser?.role || 'SYSTEM',
+        actor: userMap[sh.changedBy]?.fullName || 'System',
+        actorRole: userMap[sh.changedBy]?.role || 'SYSTEM',
         note: sh.note,
         createdAt: sh.createdAt,
         meta: { fromStatus: sh.fromStatus, toStatus: sh.toStatus }
@@ -126,7 +146,8 @@ router.get('/:id/timeline', requireAdminOrPimpinan, async (req, res) => {
         type: 'AUDIT',
         id: al.id,
         action: al.action,
-        actor: null, // will be resolved separately if needed
+        actor: userMap[al.actorUserId]?.fullName || (al.actorUserId ? 'Unknown' : 'System'),
+        actorRole: userMap[al.actorUserId]?.role || (al.actorUserId ? 'USER' : 'SYSTEM'),
         actorUserId: al.actorUserId,
         module: al.module,
         entityType: al.entityType,

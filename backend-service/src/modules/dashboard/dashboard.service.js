@@ -19,57 +19,92 @@ class DashboardService {
           activeRentals,
           pendingRentals,
           totalAssets: await prisma.asset.count()
-        },
-        analytics: {
-          revenueByMonth: [],
-          topAssets: []
         }
       };
     }
 
     const totalAssets = await prisma.asset.count();
-    const activeRentals = await prisma.rentalRequest.count({
-      where: { status: 'ACTIVE_RENTAL' }
+    
+    // Active rented assets right now
+    const today = new Date();
+    const currentlyRented = await prisma.rentalRequest.findMany({
+      where: {
+        status: 'ACTIVE_RENTAL',
+        startDatetime: { lte: today },
+        endDatetime: { gte: today }
+      },
+      select: { assetId: true }
     });
+    
+    const rentedAssetIds = new Set(currentlyRented.map(r => r.assetId));
+    const rentedAssets = rentedAssetIds.size;
+    const availableAssets = totalAssets - rentedAssets;
     
     const revenue = await prisma.invoice.aggregate({
       where: { status: 'PAID' },
       _sum: { totalAmount: true }
     });
 
-    const pendingApprovals = await prisma.rentalRequest.count({
-      where: { status: 'PENDING_APPROVAL' }
-    });
-
-    const newSubmissions = await prisma.rentalRequest.count({
-      where: { status: 'SUBMITTED' }
-    });
-
     return {
       stats: {
         totalAssets,
-        activeRentals,
+        rentedAssets,
+        availableAssets,
         totalRevenue: revenue._sum.totalAmount || 0,
-        pendingApprovals,
-        newSubmissions
       }
     };
   }
 
-  async getAnalytics() {
-    // Last 6 months revenue
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  async getAnalytics(period = 'MONTHLY') {
+    let revenueData = [];
+    const now = new Date();
 
-    const revenueByMonth = await prisma.$queryRaw`
-      SELECT 
-        TO_CHAR(issue_date, 'Mon YYYY') as month,
-        SUM(total_amount) as amount
-      FROM invoices
-      WHERE status = 'PAID' AND issue_date >= ${sixMonthsAgo}
-      GROUP BY TO_CHAR(issue_date, 'Mon YYYY'), DATE_TRUNC('month', issue_date)
-      ORDER BY DATE_TRUNC('month', issue_date) ASC
-    `;
+    if (period === 'DAILY') {
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      revenueData = await prisma.$queryRaw`
+        SELECT 
+          TO_CHAR(issue_date, 'DD Mon') as period,
+          SUM(total_amount) as amount
+        FROM invoices
+        WHERE status = 'PAID' AND issue_date >= ${thirtyDaysAgo}
+        GROUP BY TO_CHAR(issue_date, 'DD Mon'), DATE_TRUNC('day', issue_date)
+        ORDER BY DATE_TRUNC('day', issue_date) ASC
+      `;
+    } else if (period === 'MONTHLY') {
+      const twelveMonthsAgo = new Date(now);
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+      revenueData = await prisma.$queryRaw`
+        SELECT 
+          TO_CHAR(issue_date, 'Mon YYYY') as period,
+          SUM(total_amount) as amount
+        FROM invoices
+        WHERE status = 'PAID' AND issue_date >= ${twelveMonthsAgo}
+        GROUP BY TO_CHAR(issue_date, 'Mon YYYY'), DATE_TRUNC('month', issue_date)
+        ORDER BY DATE_TRUNC('month', issue_date) ASC
+      `;
+    } else if (period === 'YEARLY') {
+      const fiveYearsAgo = new Date(now);
+      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+
+      revenueData = await prisma.$queryRaw`
+        SELECT 
+          TO_CHAR(issue_date, 'YYYY') as period,
+          SUM(total_amount) as amount
+        FROM invoices
+        WHERE status = 'PAID' AND issue_date >= ${fiveYearsAgo}
+        GROUP BY TO_CHAR(issue_date, 'YYYY'), DATE_TRUNC('year', issue_date)
+        ORDER BY DATE_TRUNC('year', issue_date) ASC
+      `;
+    }
+
+    // Convert BigInt to Number if necessary (Prisma queryRaw sometimes returns BigInt for sums)
+    revenueData = revenueData.map(item => ({
+      period: item.period,
+      amount: Number(item.amount || 0)
+    }));
 
     // Utilization: count rentals by asset
     const assetUtilization = await prisma.rentalRequest.groupBy({
@@ -100,7 +135,7 @@ class DashboardService {
     );
 
     return {
-      revenueByMonth,
+      revenueData,
       topAssets
     };
   }

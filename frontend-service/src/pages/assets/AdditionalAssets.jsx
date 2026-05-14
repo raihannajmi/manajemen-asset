@@ -67,7 +67,9 @@ const AdditionalAssets = () => {
                 <tr key={asset.id} className="hover:bg-slate-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-700">{asset.assetCode}</td>
                   <td className="px-6 py-4 text-sm font-bold text-slate-900">{asset.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{asset.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {typeof asset.category === 'object' ? asset.category?.name : asset.category}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Rp {asset.price.toLocaleString('id-ID')}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{asset.stock}</td>
                 </tr>
