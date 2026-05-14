@@ -22,22 +22,31 @@ const BookAsset = () => {
   const [error, setError] = useState('');
 
   // Fetch Existing Rental if Editing
-  const { isLoading: isLoadingRental } = useQuery({
+  const { data: rentalData, isLoading: isLoadingRental } = useQuery({
     queryKey: ['rental', id],
     queryFn: async () => {
       const res = await api.get(`/rentals/${id}`);
-      const d = res.data;
-      setFormData({
-        eventName: d.eventName,
-        startDatetime: new Date(d.startDatetime).toISOString().slice(0, 16),
-        endDatetime: new Date(d.endDatetime).toISOString().slice(0, 16),
-        participantCount: d.participantCount,
-        purpose: d.purpose,
-      });
-      return d;
+      return res.data;
     },
     enabled: isEditing
   });
+
+  // Update form data when rental data is loaded
+  React.useEffect(() => {
+    if (rentalData && isEditing) {
+      try {
+        setFormData({
+          eventName: rentalData.eventName || '',
+          startDatetime: rentalData.startDatetime ? new Date(rentalData.startDatetime).toISOString().slice(0, 16) : '',
+          endDatetime: rentalData.endDatetime ? new Date(rentalData.endDatetime).toISOString().slice(0, 16) : '',
+          participantCount: rentalData.participantCount || '',
+          purpose: rentalData.purpose || '',
+        });
+      } catch (e) {
+        console.error("Error parsing dates", e);
+      }
+    }
+  }, [rentalData, isEditing]);
 
   // Fetch Asset Detail
   const { data: asset, isLoading: isLoadingAsset } = useQuery({
@@ -100,6 +109,8 @@ const BookAsset = () => {
     setError('');
     saveMutation.mutate(formData);
   };
+
+  const isLoading = isLoadingAsset || (isEditing && isLoadingRental);
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={32} /></div>;
 
