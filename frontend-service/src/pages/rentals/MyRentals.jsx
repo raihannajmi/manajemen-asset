@@ -11,6 +11,10 @@ const STATUS_COLORS = {
   APPROVED: 'bg-green-100 text-green-700',
   REJECTED: 'bg-red-100 text-red-700',
   REVISION: 'bg-orange-100 text-orange-700',
+  INVOICE_GENERATED: 'bg-indigo-100 text-indigo-700',
+  WAITING_PAYMENT: 'bg-purple-100 text-purple-700',
+  ACTIVE_RENTAL: 'bg-teal-100 text-teal-700',
+  COMPLETED: 'bg-slate-700 text-white',
 };
 
 const STATUS_ICONS = {
@@ -20,6 +24,10 @@ const STATUS_ICONS = {
   APPROVED: <CheckCircle2 size={16} className="mr-1.5" />,
   REJECTED: <XCircle size={16} className="mr-1.5" />,
   REVISION: <AlertCircle size={16} className="mr-1.5" />,
+  INVOICE_GENERATED: <FileEdit size={16} className="mr-1.5" />,
+  WAITING_PAYMENT: <Clock size={16} className="mr-1.5" />,
+  ACTIVE_RENTAL: <CheckCircle2 size={16} className="mr-1.5" />,
+  COMPLETED: <CheckCircle2 size={16} className="mr-1.5" />,
 };
 
 const STATUS_LABELS = {
@@ -29,6 +37,10 @@ const STATUS_LABELS = {
   APPROVED: 'Disetujui',
   REJECTED: 'Ditolak',
   REVISION: 'Perlu Revisi',
+  INVOICE_GENERATED: 'Invoice Terbit',
+  WAITING_PAYMENT: 'Menunggu Bayar',
+  ACTIVE_RENTAL: 'Sewa Aktif',
+  COMPLETED: 'Selesai',
 };
 
 const MyRentals = () => {

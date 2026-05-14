@@ -267,11 +267,27 @@ const RentalDetail = () => {
           {isAdmin && rental.status === 'APPROVED' && (
             <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-sm shadow-indigo-50">
               <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileText className="mr-2 text-indigo-600" size={20} /> Terbitkan Invoice</h3>
-              <p className="text-sm text-slate-500 mb-4">Pengajuan telah disetujui Pimpinan. Terbitkan invoice agar tagihan resmi dapat dibuat.</p>
+              <p className="text-sm text-slate-500 mb-4">Pengajuan telah disetujui Pimpinan. Masukkan Nomor VA lalu terbitkan invoice agar tagihan resmi dapat dibuat.</p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Nomor Virtual Account (VA) Pembayaran</label>
+                <input 
+                  type="text" 
+                  id="vaNumber"
+                  placeholder="Contoh: 88000123456789" 
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
               <button
                 onClick={async () => {
+                  const vaInput = document.getElementById('vaNumber').value;
+                  if (!vaInput) {
+                    alert('Harap masukkan Nomor Virtual Account terlebih dahulu!');
+                    return;
+                  }
                   try {
-                    await api.post(`/rentals/${id}/invoices`);
+                    await api.post(`/rentals/${id}/invoices`, { manualVaNumber: vaInput });
                     queryClient.invalidateQueries(['rental', id]);
                   } catch (e) {
                     alert('Gagal membuat invoice: ' + e.response?.data?.message);
@@ -283,6 +299,7 @@ const RentalDetail = () => {
               </button>
             </div>
           )}
+
 
           {/* Admin: Generate Contract (after Invoice created) */}
           {isAdmin && rental.status === 'INVOICE_GENERATED' && (
