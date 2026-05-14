@@ -40,6 +40,9 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 const auditRoutes = require('./modules/audit/audit.routes');
 app.use('/api/v1/audit-logs', auditRoutes);
 
+const orderRoutes = require('./modules/orders/order.routes');
+app.use('/api/v1/orders', orderRoutes);
+
 // TODO: Add Modular Routes here
 
 // Error Handling Middleware

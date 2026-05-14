@@ -9,7 +9,8 @@ import {
   User,
   Bell,
   Menu,
-  X
+  X,
+  ShoppingBag
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 
@@ -31,18 +32,15 @@ const DashboardLayout = ({ children }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['ADMIN_ASET', 'PIMPINAN', 'PENYEWA'] },
-    // Admin & Pimpinan - Asset Management
-    { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    // ====== Admin & Pimpinan ======
+    { name: 'Order Center', icon: <ShoppingBag size={20} />, path: '/orders', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Manajemen Aset', icon: <Package size={20} />, path: '/assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Aset Tambahan', icon: <Package size={20} />, path: '/additional-assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
-    // Admin & Pimpinan - Approval
-    { name: 'Verifikasi Pengajuan', icon: <FileText size={20} />, path: '/verify-rentals', roles: ['ADMIN_ASET', 'PIMPINAN'] },
-    { name: 'Verifikasi Pembayaran', icon: <FileText size={20} />, path: '/verify-payments', roles: ['ADMIN_ASET', 'PIMPINAN'] },
-    // Pimpinan only - final approval
     { name: 'Persetujuan', icon: <FileText size={20} />, path: '/approvals', roles: ['PIMPINAN'] },
-    // Admin & Pimpinan - audit
+    { name: 'Verifikasi Pembayaran', icon: <FileText size={20} />, path: '/verify-payments', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Riwayat Audit', icon: <History size={20} />, path: '/audit-logs', roles: ['ADMIN_ASET', 'PIMPINAN'] },
-    // Penyewa
+    // ====== Penyewa ======
     { name: 'Katalog Aset', icon: <Package size={20} />, path: '/catalog', roles: ['PENYEWA'] },
     { name: 'Pengajuan Saya', icon: <FileText size={20} />, path: '/my-rentals', roles: ['PENYEWA'] },
   ];

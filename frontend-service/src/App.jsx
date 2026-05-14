@@ -19,6 +19,7 @@ import AdditionalAssets from './pages/assets/AdditionalAssets';
 import Dashboard from './pages/Dashboard';
 import AuditLogList from './pages/audit/AuditLogList';
 import NotFound from './pages/NotFound';
+import OrderCenter from './pages/orders/OrderCenter';
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="/rentals/:id" element={accessToken ? <DashboardLayout><RentalDetail /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/rentals/:id/edit" element={accessToken ? <DashboardLayout><BookAsset /></DashboardLayout> : <Navigate to="/login" />} />
           
+          <Route path="/orders" element={accessToken ? <DashboardLayout><OrderCenter /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/verify-payments" element={accessToken ? <DashboardLayout><VerifyPayments /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/additional-assets" element={accessToken ? <DashboardLayout><AdditionalAssets /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/audit-logs" element={accessToken ? <DashboardLayout><AuditLogList /></DashboardLayout> : <Navigate to="/login" />} />

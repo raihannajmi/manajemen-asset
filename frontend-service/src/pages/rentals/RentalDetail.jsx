@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Calendar, Users, MapPin, FileText, CheckCircle, XCircle, AlertTriangle, FileSignature } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, Users, MapPin, FileText, CheckCircle, XCircle, AlertTriangle, FileSignature, Activity, Clock, Shield, RefreshCw } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import api from '../../lib/axios';
 
@@ -33,11 +33,22 @@ const RentalDetail = () => {
     }
   });
 
+  const { data: timelineData, isLoading: isTimelineLoading } = useQuery({
+    queryKey: ['order-timeline', id],
+    queryFn: async () => {
+      const res = await api.get(`/orders/${id}/timeline`);
+      return res.data;
+    },
+    enabled: ['ADMIN_ASET', 'PIMPINAN'].includes(user?.role),
+  });
+
   const verifyMutation = useMutation({
     mutationFn: async () => api.post(`/rentals/${id}/verify`, { note }),
     onSuccess: () => {
       queryClient.invalidateQueries(['rental', id]);
-      navigate('/verify-rentals');
+      queryClient.invalidateQueries(['order-timeline', id]);
+      queryClient.invalidateQueries(['orders']);
+      navigate('/orders');
     }
   });
 
@@ -45,7 +56,9 @@ const RentalDetail = () => {
     mutationFn: async (action) => api.post(`/rentals/${id}/approve`, { action, note }),
     onSuccess: () => {
       queryClient.invalidateQueries(['rental', id]);
-      navigate('/approvals');
+      queryClient.invalidateQueries(['order-timeline', id]);
+      queryClient.invalidateQueries(['orders']);
+      navigate('/orders');
     }
   });
 
@@ -55,6 +68,7 @@ const RentalDetail = () => {
   const isAdmin = user?.role === 'ADMIN_ASET';
   const isPimpinan = user?.role === 'PIMPINAN';
   const isTenant = user?.role === 'PENYEWA';
+  const isAdminOrPimpinan = isAdmin || isPimpinan;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -371,24 +385,107 @@ const RentalDetail = () => {
             </div>
           )}
 
-          {/* Status History / Tracking */}
+          {/* Full Audit Timeline */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Jejak Pengajuan</h3>
-            <div className="space-y-6">
-              {rental.statusHistory.map((history, idx) => (
-                <div key={history.id} className="relative flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full z-10" />
-                    {idx !== rental.statusHistory.length - 1 && <div className="w-px h-full bg-slate-200 absolute top-3" />}
-                  </div>
-                  <div className="-mt-1.5 pb-4">
-                    <p className="text-sm font-bold text-slate-800">{history.toStatus.replace('_', ' ')}</p>
-                    <p className="text-xs text-slate-400">{new Date(history.createdAt).toLocaleString('id-ID')}</p>
-                    {history.note && <p className="text-sm text-slate-600 mt-1 italic">"{history.note}"</p>}
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Activity size={18} className="text-blue-600" />
+                Timeline Order
+              </h3>
+              {isAdminOrPimpinan && timelineData?.timeline?.length > 0 && (
+                <span className="text-xs text-slate-400">{timelineData.timeline.length} aktivitas</span>
+              )}
             </div>
+
+            {/* For Tenant: show simple status history */}
+            {!isAdminOrPimpinan && (
+              <div className="space-y-4">
+                {rental.statusHistory.map((history, idx) => (
+                  <div key={history.id} className="relative flex gap-4">
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full z-10 mt-1" />
+                      {idx !== rental.statusHistory.length - 1 && <div className="w-px flex-1 bg-slate-200 mt-1" />}
+                    </div>
+                    <div className="pb-4">
+                      <p className="text-sm font-bold text-slate-800">{history.toStatus.replace(/_/g, ' ')}</p>
+                      <p className="text-xs text-slate-400">{new Date(history.createdAt).toLocaleString('id-ID')}</p>
+                      {history.note && <p className="text-sm text-slate-600 mt-1 italic">"{history.note}"</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* For Admin/Pimpinan: show full audit timeline */}
+            {isAdminOrPimpinan && (
+              isTimelineLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+              ) : (
+                <div className="space-y-3">
+                  {(timelineData?.timeline || []).map((entry, idx) => {
+                    const isStatusChange = entry.type === 'STATUS_CHANGE';
+                    const isAudit = entry.type === 'AUDIT';
+
+                    const dotColor = isStatusChange
+                      ? (entry.action === 'APPROVED' || entry.action === 'ACTIVE_RENTAL' || entry.action === 'COMPLETED') ? 'bg-green-500'
+                      : (entry.action === 'REJECTED') ? 'bg-red-500'
+                      : (entry.action === 'REVISION') ? 'bg-orange-500'
+                      : 'bg-blue-500'
+                      : 'bg-slate-400';
+
+                    return (
+                      <div key={entry.id + idx} className="flex gap-3">
+                        <div className="flex flex-col items-center flex-shrink-0 pt-1">
+                          <div className={`w-2.5 h-2.5 rounded-full ${dotColor} z-10`} />
+                          {idx !== (timelineData?.timeline?.length || 0) - 1 && (
+                            <div className="w-px flex-1 bg-slate-100 mt-1 min-h-[20px]" />
+                          )}
+                        </div>
+                        <div className="pb-3 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isStatusChange ? (
+                              <>
+                                <span className="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                                  {entry.action.replace(/_/g, ' ')}
+                                </span>
+                                {entry.actor && (
+                                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                                    <Shield size={10} /> {entry.actor}
+                                    {entry.actorRole && <span className="text-slate-400">({entry.actorRole})</span>}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                                  {entry.action}
+                                </span>
+                                <span className="text-xs text-slate-500">{entry.entityType}</span>
+                                {entry.meta?.ipAddress && (
+                                  <span className="text-[10px] text-slate-400 ml-auto">IP: {entry.meta.ipAddress}</span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                          {entry.note && (
+                            <p className="text-xs text-slate-600 mt-1 italic bg-slate-50 px-2 py-1 rounded">
+                              "{entry.note}"
+                            </p>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                            <Clock size={9} />
+                            {new Date(entry.createdAt).toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!timelineData?.timeline || timelineData.timeline.length === 0) && (
+                    <p className="text-sm text-slate-400 text-center py-4">Belum ada aktivitas.</p>
+                  )}
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>
