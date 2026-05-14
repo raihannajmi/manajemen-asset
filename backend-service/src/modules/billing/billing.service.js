@@ -6,7 +6,7 @@ class BillingService {
   
   // --- INVOICE (Sprint 5) ---
 
-  async generateInvoice(requestId, adminId, { utilityCosts, manualVaNumber }) {
+  async generateInvoice(requestId, adminId, { utilityCosts, manualVaNumber } = {}) {
     const request = await prisma.rentalRequest.findUnique({
       where: { id: requestId },
       include: { asset: true, tenantUser: true }
@@ -137,7 +137,7 @@ class BillingService {
 
   // --- PAYMENT (Sprint 6) ---
 
-  async uploadPaymentProof(invoiceId, tenantId, { amount, transferDate, proofUrl }) {
+  async uploadPaymentProof(invoiceId, tenantId, { amount, transferDate, proofUrl } = {}) {
     const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, include: { request: true } });
     if (!invoice) throw new Error('Invoice not found');
     if (invoice.request.tenantUserId !== tenantId) throw new Error('Unauthorized');
@@ -155,7 +155,7 @@ class BillingService {
     });
   }
 
-  async verifyPayment(paymentId, adminId, { status, note }) {
+  async verifyPayment(paymentId, adminId, { status, note } = {}) {
     const payment = await prisma.payment.findUnique({ where: { id: paymentId }, include: { invoice: true } });
     if (!payment || payment.verificationStatus !== 'PENDING') throw new Error('Invalid payment for verification');
 
