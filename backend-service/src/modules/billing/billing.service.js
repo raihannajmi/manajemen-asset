@@ -131,7 +131,7 @@ class BillingService {
           data: { status: 'PAID' }
         });
 
-        // Update rental request status
+        // Update rental request status to ACTIVE_RENTAL
         await tx.rentalRequest.update({
           where: { id: payment.invoice.requestId },
           data: { status: 'ACTIVE_RENTAL' }
@@ -140,10 +140,10 @@ class BillingService {
         await tx.statusHistory.create({
           data: {
             requestId: payment.invoice.requestId,
-            fromStatus: 'INVOICE_GENERATED',
+            fromStatus: 'WAITING_PAYMENT',
             toStatus: 'ACTIVE_RENTAL',
             changedBy: adminId,
-            note: `Pembayaran diverifikasi. Transaksi selesai dan sewa aktif.`
+            note: `Pembayaran diverifikasi. Sewa sekarang aktif.`
           }
         });
       }
@@ -153,6 +153,7 @@ class BillingService {
   }
 
   // --- CONTRACT (Sprint 6) ---
+  // Flow: APPROVED -> Invoice Generated -> Contract Generated -> WAITING_PAYMENT -> (payment) -> ACTIVE_RENTAL
 
   async generateContract(requestId, adminId) {
     const request = await prisma.rentalRequest.findUnique({
@@ -160,9 +161,16 @@ class BillingService {
       include: { invoice: true }
     });
 
-    if (!request || request.status !== 'ACTIVE_RENTAL') {
-      throw new Error('Kontrak hanya bisa dibuat jika pembayaran sudah lunas (ACTIVE_RENTAL).');
+    if (!request) throw new Error('Pengajuan tidak ditemukan.');
+
+    // Contract can be generated after invoice is created (INVOICE_GENERATED status)
+    const allowedStatuses = ['INVOICE_GENERATED'];
+    if (!allowedStatuses.includes(request.status)) {
+      throw new Error('Kontrak hanya bisa diterbitkan setelah invoice dibuat (status: INVOICE_GENERATED).');
     }
+
+    const existingContract = await prisma.contract.findUnique({ where: { requestId } });
+    if (existingContract) throw new Error('Kontrak sudah pernah dibuat untuk pengajuan ini.');
 
     const count = await prisma.contract.count();
     const contractNo = `CTR-${new Date().getFullYear()}-${(count+1).toString().padStart(4,'0')}`;
@@ -175,13 +183,24 @@ class BillingService {
           startDate: request.startDatetime,
           endDate: request.endDatetime,
           contractValue: request.invoice?.totalAmount || 0,
-          pdfUrl: 'https://placeholder.url/kontrak_final.pdf' // Mock PDF URL
+          pdfUrl: null // Will be generated asynchronously
         }
       });
 
+      // Move to WAITING_PAYMENT so tenant can now upload proof of payment
       await tx.rentalRequest.update({
         where: { id: requestId },
-        data: { status: 'CONTRACT_GENERATED' }
+        data: { status: 'WAITING_PAYMENT' }
+      });
+
+      await tx.statusHistory.create({
+        data: {
+          requestId,
+          fromStatus: 'INVOICE_GENERATED',
+          toStatus: 'WAITING_PAYMENT',
+          changedBy: adminId,
+          note: `Kontrak ${contractNo} diterbitkan. Menunggu pembayaran dari penyewa.`
+        }
       });
 
       return contract;

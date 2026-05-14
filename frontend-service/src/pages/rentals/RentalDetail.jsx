@@ -12,6 +12,10 @@ const STATUS_BADGES = {
   APPROVED: 'bg-green-100 text-green-700',
   REJECTED: 'bg-red-100 text-red-700',
   REVISION: 'bg-orange-100 text-orange-700',
+  INVOICE_GENERATED: 'bg-indigo-100 text-indigo-700',
+  WAITING_PAYMENT: 'bg-purple-100 text-purple-700',
+  ACTIVE_RENTAL: 'bg-teal-100 text-teal-700',
+  COMPLETED: 'bg-slate-800 text-white',
 };
 
 const RentalDetail = () => {
@@ -248,8 +252,8 @@ const RentalDetail = () => {
           {/* Admin: Generate Invoice */}
           {isAdmin && rental.status === 'APPROVED' && (
             <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-sm shadow-indigo-50">
-              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileText className="mr-2 text-indigo-600" size={20} /> Buat Invoice</h3>
-              <p className="text-sm text-slate-500 mb-4">Pengajuan telah disetujui. Buat invoice agar penyewa dapat melakukan pembayaran.</p>
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileText className="mr-2 text-indigo-600" size={20} /> Terbitkan Invoice</h3>
+              <p className="text-sm text-slate-500 mb-4">Pengajuan telah disetujui Pimpinan. Terbitkan invoice agar tagihan resmi dapat dibuat.</p>
               <button
                 onClick={async () => {
                   try {
@@ -266,7 +270,28 @@ const RentalDetail = () => {
             </div>
           )}
 
-          {/* Invoice Info & Upload Payment (Tenant) */}
+          {/* Admin: Generate Contract (after Invoice created) */}
+          {isAdmin && rental.status === 'INVOICE_GENERATED' && (
+            <div className="bg-white p-6 rounded-2xl border border-purple-200 shadow-sm shadow-purple-50">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileSignature className="mr-2 text-purple-600" size={20} /> Terbitkan Kontrak</h3>
+              <p className="text-sm text-slate-500 mb-4">Invoice sudah diterbitkan. Langkah berikutnya adalah menerbitkan surat kontrak agar penyewa bisa melakukan pembayaran.</p>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.post(`/rentals/${id}/contracts`);
+                    queryClient.invalidateQueries(['rental', id]);
+                  } catch (e) {
+                    alert('Gagal membuat kontrak: ' + e.response?.data?.message);
+                  }
+                }}
+                className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition"
+              >
+                Terbitkan Kontrak Sewa
+              </button>
+            </div>
+          )}
+
+          {/* Invoice Info */}
           {rental.invoice && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center"><FileText className="mr-2 text-slate-600" size={20} /> Tagihan (Invoice)</h3>
@@ -279,6 +304,12 @@ const RentalDetail = () => {
                   <span className="text-sm text-slate-500">Total Tagihan</span>
                   <span className="font-bold text-lg text-blue-600">Rp {rental.invoice.totalAmount.toLocaleString('id-ID')}</span>
                 </div>
+                {rental.invoice.manualVaNumber && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-slate-500">No. Virtual Account</span>
+                    <span className="font-mono font-bold text-sm text-green-700 bg-green-50 px-2 py-1 rounded">{rental.invoice.manualVaNumber}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Status</span>
                   <span className={`px-2 py-1 rounded text-xs font-bold ${rental.invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -287,10 +318,10 @@ const RentalDetail = () => {
                 </div>
               </div>
 
-              {/* Upload Payment Proof for Tenant */}
-              {isTenant && rental.invoice.status === 'UNPAID' && (
+              {/* Upload Payment Proof for Tenant - only when WAITING_PAYMENT */}
+              {isTenant && rental.status === 'WAITING_PAYMENT' && rental.invoice.status === 'UNPAID' && (
                 <div className="space-y-3 pt-2">
-                  <p className="text-sm text-slate-500">Silakan transfer sesuai tagihan dan unggah bukti pembayarannya di bawah.</p>
+                  <p className="text-sm font-medium text-slate-700">Transfer ke nomor VA di atas, lalu unggah bukti transfer Anda:</p>
                   <button
                     onClick={async () => {
                       const proofUrl = prompt('Masukkan link gambar bukti transfer (Mock):', 'https://mock-image.com/bukti.jpg');
@@ -313,35 +344,20 @@ const RentalDetail = () => {
             </div>
           )}
 
-          {/* Admin: Generate Contract */}
-          {isAdmin && rental.status === 'ACTIVE_RENTAL' && (
-            <div className="bg-white p-6 rounded-2xl border border-purple-200 shadow-sm shadow-purple-50">
-              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileSignature className="mr-2 text-purple-600" size={20} /> Buat Kontrak</h3>
-              <p className="text-sm text-slate-500 mb-4">Pembayaran lunas. Generate dokumen kontrak akhir untuk ditandatangani.</p>
-              <button
-                onClick={async () => {
-                  try {
-                    await api.post(`/rentals/${id}/contracts`);
-                    queryClient.invalidateQueries(['rental', id]);
-                  } catch (e) {
-                    alert('Gagal membuat kontrak: ' + e.response?.data?.message);
-                  }
-                }}
-                className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition"
-              >
-                Generate Kontrak Final
-              </button>
-            </div>
-          )}
-
           {/* Contract Info */}
           {rental.contract && (
             <div className="bg-white p-6 rounded-2xl border border-green-200 shadow-sm shadow-green-50">
               <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><CheckCircle className="mr-2 text-green-600" size={20} /> Kontrak Sewa</h3>
-              <p className="text-sm text-slate-600 mb-4">Nomor: <span className="font-mono font-semibold">{rental.contract.contractNo}</span></p>
-              <a href={rental.contract.pdfUrl} target="_blank" rel="noreferrer" className="w-full py-2.5 block text-center bg-white border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">
-                Download PDF Kontrak
-              </a>
+              <p className="text-sm text-slate-600 mb-3">Nomor: <span className="font-mono font-semibold">{rental.contract.contractNo}</span></p>
+              {rental.contract.pdfUrl ? (
+                <a href={rental.contract.pdfUrl} target="_blank" rel="noreferrer" className="w-full py-2.5 block text-center bg-white border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">
+                  Download PDF Kontrak
+                </a>
+              ) : (
+                <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-center">
+                  <p className="text-xs text-yellow-700 font-medium">⏳ PDF sedang diproses, akan tersedia dalam beberapa saat.</p>
+                </div>
+              )}
             </div>
           )}
 
