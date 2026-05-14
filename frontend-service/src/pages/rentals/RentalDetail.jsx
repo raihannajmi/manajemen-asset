@@ -119,13 +119,9 @@ const RentalDetail = () => {
               <p className="font-semibold text-slate-900 text-lg">{rental.eventName}</p>
             </div>
             <div className="grid grid-cols-2 gap-y-4 text-sm mb-4">
-              <div>
+              <div className="col-span-2">
                 <p className="text-slate-500">Aset yang Disewa</p>
                 <Link to={`/catalog/${rental.assetId}`} className="font-semibold text-blue-600 hover:underline">{rental.asset.name}</Link>
-              </div>
-              <div>
-                <p className="text-slate-500">Jumlah Peserta</p>
-                <p className="font-semibold text-slate-900">{rental.participantCount} orang</p>
               </div>
               <div>
                 <p className="text-slate-500">Mulai</p>

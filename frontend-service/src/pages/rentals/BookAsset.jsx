@@ -250,16 +250,7 @@ const BookAsset = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Estimasi Peserta</label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-3.5 text-slate-400" size={18} />
-                  <input type="number" {...register('participantCount')} className={`w-full pl-10 p-3 bg-slate-50 border rounded-xl ${errors.participantCount ? 'border-red-500' : 'border-slate-200'}`} placeholder="Jumlah orang" />
-                </div>
-                {errors.participantCount && <p className="mt-1 text-xs text-red-500">{errors.participantCount.message}</p>}
-              </div>
-            </div>
+            <input type="hidden" {...register('participantCount')} value={1} />
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Tujuan / Keterangan</label>
