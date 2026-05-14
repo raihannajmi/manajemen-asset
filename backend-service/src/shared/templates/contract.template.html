@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Kontrak Sewa {{contractNo}}</title>
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.5; margin: 0; padding: 50px; }
+        .header { text-align: center; margin-bottom: 40px; border-bottom: 3px double #000; padding-bottom: 20px; }
+        .logo { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .sub-logo { font-size: 14px; }
+        .title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 5px; text-decoration: underline; }
+        .subtitle { text-align: center; font-size: 14px; margin-bottom: 40px; }
+        .content { font-size: 14px; text-align: justify; }
+        .indent { margin-left: 20px; }
+        .grid-info { display: grid; grid-template-columns: 150px 10px 1fr; margin-bottom: 10px; }
+        .signatures { display: flex; justify-content: space-between; margin-top: 80px; text-align: center; }
+        .signature-box { width: 45%; }
+        .signature-line { margin-top: 80px; border-top: 1px solid #000; padding-top: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">SISTEM MANAJEMEN ASET</div>
+        <div class="sub-logo">Jl. Kampus Utama No. 1, Kota Pendidikan</div>
+    </div>
+
+    <div class="title">SURAT PERJANJIAN SEWA MENYEWA ASET</div>
+    <div class="subtitle">Nomor: {{contractNo}}</div>
+
+    <div class="content">
+        <p>Pada hari ini, tanggal <b>{{signedDate}}</b>, yang bertanda tangan di bawah ini:</p>
+
+        <div class="indent">
+            <div class="grid-info">
+                <div>Nama</div><div>:</div><div><b>Pimpinan Manajemen Aset</b></div>
+                <div>Jabatan</div><div>:</div><div>Kepala Bagian Aset</div>
+            </div>
+            <p style="margin-top: 5px; margin-bottom: 15px;">Dalam hal ini bertindak untuk dan atas nama Institusi Manajemen Aset, yang selanjutnya disebut sebagai <b>PIHAK PERTAMA</b>.</p>
+
+            <div class="grid-info">
+                <div>Nama Lengkap</div><div>:</div><div><b>{{tenantName}}</b></div>
+                <div>Organisasi/Instansi</div><div>:</div><div>{{tenantOrganization}}</div>
+                <div>Email / No. Telp</div><div>:</div><div>{{tenantEmail}} / {{tenantPhone}}</div>
+            </div>
+            <p style="margin-top: 5px;">Dalam hal ini bertindak untuk dan atas nama diri sendiri/organisasi tersebut, yang selanjutnya disebut sebagai <b>PIHAK KEDUA</b>.</p>
+        </div>
+
+        <p>Kedua belah pihak telah sepakat untuk mengikatkan diri dalam Perjanjian Sewa Menyewa Aset dengan ketentuan sebagai berikut:</p>
+
+        <p><b>PASAL 1 - OBJEK SEWA</b><br>
+        PIHAK PERTAMA menyewakan kepada PIHAK KEDUA berupa aset: <b>{{assetName}}</b> yang berlokasi di <b>{{assetLocation}}</b>.</p>
+
+        <p><b>PASAL 2 - TUJUAN SEWA</b><br>
+        PIHAK KEDUA akan menggunakan objek sewa tersebut secara khusus untuk keperluan kegiatan: <b>{{eventName}}</b>.</p>
+
+        <p><b>PASAL 3 - JANGKA WAKTU</b><br>
+        Sewa menyewa ini dilangsungkan untuk jangka waktu mulai tanggal <b>{{startDatetime}}</b> sampai dengan tanggal <b>{{endDatetime}}</b>.</p>
+
+        <p><b>PASAL 4 - BIAYA DAN PEMBAYARAN</b><br>
+        Biaya sewa yang disepakati adalah sebesar <b>Rp {{contractValue}}</b> ({{contractValueTerbilang}}). Pembayaran dilakukan melalui nomor Virtual Account yang tertera pada Invoice resmi nomor: <b>{{invoiceNo}}</b>.</p>
+
+        <p><b>PASAL 5 - KETENTUAN LAIN</b><br>
+        PIHAK KEDUA wajib menjaga kebersihan dan keutuhan fasilitas aset. Segala bentuk kerusakan yang terjadi selama masa penyewaan menjadi tanggung jawab penuh PIHAK KEDUA.</p>
+
+        <p style="margin-top: 40px;">Demikian surat perjanjian ini dibuat dan ditandatangani secara elektronik melalui sistem pada tanggal yang telah disebutkan di atas.</p>
+
+        <div class="signatures">
+            <div class="signature-box">
+                <div><b>PIHAK KEDUA</b><br>Penyewa</div>
+                <div class="signature-line">{{tenantName}}</div>
+            </div>
+            <div class="signature-box">
+                <div><b>PIHAK PERTAMA</b><br>Kepala Bagian Aset</div>
+                <!-- Optional: Image signature -->
+                <div class="signature-line">Pimpinan Manajemen Aset</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -22,8 +22,13 @@ class BillingController {
 
   async uploadPaymentProof(req, res) {
     try {
-      // Use mock URL or real URL if handled by multer
-      const proofUrl = req.file ? req.file.location : req.body.proofUrl || 'https://placeholder.url/bukti_transfer.jpg';
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const { getPublicUrl } = require('../../shared/utils/s3Uploader');
+      const proofUrl = getPublicUrl(req.file.key);
+
       const data = await billingService.uploadPaymentProof(req.params.id, req.user.id, {
         amount: req.body.amount,
         transferDate: req.body.transferDate,

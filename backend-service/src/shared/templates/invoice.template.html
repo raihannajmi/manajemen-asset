@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{invoiceNo}}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 40px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .title { font-size: 28px; font-weight: bold; color: #1e3a8a; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 40px; gap: 20px; }
+        .label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 16px; font-weight: bold; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid #e2e8f0; font-size: 14px; color: #475569; }
+        td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        .text-right { text-align: right; }
+        .totals { width: 300px; margin-left: auto; }
+        .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+        .totals-row.grand { font-size: 18px; font-weight: bold; color: #1e3a8a; border-bottom: none; border-top: 2px solid #e2e8f0; padding-top: 12px; margin-top: 8px; }
+        .payment-info { background: #f8fafc; padding: 20px; border-radius: 8px; margin-top: 40px; }
+        .footer { margin-top: 60px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="title">INVOICE</div>
+            <div style="font-size: 14px; color: #64748b; margin-top: 5px;">Sistem Manajemen Aset</div>
+        </div>
+        <div class="text-right">
+            <div class="label">No. Invoice</div>
+            <div class="value" style="font-size: 20px;">{{invoiceNo}}</div>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div>
+            <div class="label">Ditagihkan Kepada:</div>
+            <div class="value">{{tenantName}}</div>
+            <div>{{tenantEmail}}</div>
+            <div>{{tenantOrganization}}</div>
+        </div>
+        <div class="text-right">
+            <div class="label">Tanggal Terbit:</div>
+            <div class="value">{{issueDate}}</div>
+            <div class="label">Jatuh Tempo:</div>
+            <div class="value">{{dueDate}}</div>
+            <div class="label">Status:</div>
+            <div class="value" style="color: {{statusColor}}">{{status}}</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Deskripsi</th>
+                <th class="text-right">Durasi / Qty</th>
+                <th class="text-right">Harga Satuan</th>
+                <th class="text-right">Jumlah</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <b>Sewa: {{assetName}}</b><br>
+                    <span style="font-size: 12px; color: #666;">Keperluan: {{eventName}}</span><br>
+                    <span style="font-size: 12px; color: #666;">Periode: {{startDatetime}} - {{endDatetime}}</span>
+                </td>
+                <td class="text-right">{{units}} {{unitType}}</td>
+                <td class="text-right">Rp {{basePrice}}</td>
+                <td class="text-right">Rp {{subtotal}}</td>
+            </tr>
+            <!-- Deposit Row if any -->
+            {{#if deposit}}
+            <tr>
+                <td><b>Deposit (Jaminan)</b><br><span style="font-size: 12px; color: #666;">Dapat dikembalikan setelah sewa selesai.</span></td>
+                <td class="text-right">1</td>
+                <td class="text-right">Rp {{deposit}}</td>
+                <td class="text-right">Rp {{deposit}}</td>
+            </tr>
+            {{/if}}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="totals-row">
+            <span>Subtotal</span>
+            <span>Rp {{subtotal}}</span>
+        </div>
+        <div class="totals-row">
+            <span>Pajak (PPN)</span>
+            <span>Rp {{tax}}</span>
+        </div>
+        <div class="totals-row grand">
+            <span>Total Tagihan</span>
+            <span>Rp {{total}}</span>
+        </div>
+    </div>
+
+    <div class="payment-info">
+        <div class="label">Instruksi Pembayaran</div>
+        <p style="margin: 10px 0 0 0;">Silakan transfer sejumlah <b>Rp {{total}}</b> ke rekening berikut:</p>
+        <div style="font-size: 18px; font-weight: bold; margin: 15px 0; color: #0f172a;">
+            Virtual Account: {{manualVaNumber}}
+        </div>
+        <p style="margin: 0; font-size: 12px; color: #64748b;">Harap cantumkan No. Invoice pada berita acara transfer dan segera unggah bukti pembayaran melalui sistem.</p>
+    </div>
+
+    <div class="footer">
+        Dokumen ini diterbitkan secara otomatis oleh Sistem Manajemen Aset dan sah tanpa tanda tangan.
+    </div>
+</body>
+</html>

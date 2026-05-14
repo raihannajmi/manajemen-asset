@@ -81,12 +81,15 @@ class AssetController {
     }
   }
 
-  // Upload Media Placeholder
+  // Media Upload (R2 Integrated)
   async uploadMedia(req, res) {
     try {
-      // In a real implementation, multer-s3 handles the upload to Cloudflare R2
-      // and places the URL in req.file.location
-      const fileUrl = req.file ? req.file.location : 'https://placeholder.url/image.png';
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const { getPublicUrl } = require('../../shared/utils/s3Uploader');
+      const fileUrl = getPublicUrl(req.file.key);
       
       const { prisma } = require('../../config/db');
       const media = await prisma.assetMedia.create({
@@ -110,6 +113,7 @@ class AssetController {
         return res.status(400).json({ message: 'Parameter start dan end wajib diisi (format ISO datetime)' });
       }
 
+      const { prisma } = require('../../config/db');
       const asset = await prisma.asset.findUnique({
         where: { id },
         select: { pricingSchemeJson: true }

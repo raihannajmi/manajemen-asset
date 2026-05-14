@@ -52,8 +52,13 @@ class RentalController {
 
   async uploadDocument(req, res) {
     try {
-      // Mock upload for now
-      const fileUrl = req.file ? req.file.location : 'https://placeholder.url/doc.pdf';
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      
+      const { getPublicUrl } = require('../../shared/utils/s3Uploader');
+      const fileUrl = getPublicUrl(req.file.key);
+
       const data = await rentalService.uploadDocument(req.params.id, {
         docType: req.body.docType,
         fileUrl

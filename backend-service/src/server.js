@@ -12,6 +12,7 @@ const startServer = async () => {
 
     // Start background jobs
     startRentalJobs();
+    require('./workers/pdfWorker'); // Initialize BullMQ Worker for PDF Generation
 
     app.listen(env.PORT, () => {
       console.log(`Server is running on port ${env.PORT}`);

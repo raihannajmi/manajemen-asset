@@ -15,7 +15,17 @@ router.post('/rentals/:id/invoices', checkRole(['ADMIN_ASET']), billingControlle
 
 // --- Payments ---
 // Tenant uploads payment proof for an invoice
-router.post('/invoices/:id/payments', checkRole(['PENYEWA']), billingController.uploadPaymentProof);
+const { upload } = require('../../shared/utils/s3Uploader');
+router.post(
+  '/invoices/:id/payments', 
+  checkRole(['PENYEWA']), 
+  (req, res, next) => {
+    req.uploadFolder = `payments/${req.params.id}`;
+    next();
+  },
+  upload.single('file'),
+  billingController.uploadPaymentProof
+);
 
 // Admin verifies payment
 router.post('/payments/:id/verify', checkRole(['ADMIN_ASET']), billingController.verifyPayment);

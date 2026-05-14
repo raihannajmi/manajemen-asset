@@ -32,7 +32,17 @@ router.get('/:id/availability', verifyToken, assetController.checkAvailability);
 // Price Estimate
 router.get('/:id/price-estimate', verifyToken, assetController.getPriceEstimate);
 
-// Media (Mocked Upload for now, waiting for AWS R2 integration)
-router.post('/:id/media', requireAdmin, assetController.uploadMedia);
+// Media
+const { upload } = require('../../shared/utils/s3Uploader');
+router.post(
+  '/:id/media', 
+  requireAdmin, 
+  (req, res, next) => {
+    req.uploadFolder = `assets/${req.params.id}`;
+    next();
+  },
+  upload.single('file'), 
+  assetController.uploadMedia
+);
 
 module.exports = router;

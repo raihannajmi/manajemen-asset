@@ -1,5 +1,6 @@
 const prisma = require('../../config/db');
 const { calculatePrice } = require('../../shared/utils/pricingEngine');
+const { pdfQueue } = require('../../workers/pdfWorker');
 
 class BillingService {
   
@@ -8,7 +9,7 @@ class BillingService {
   async generateInvoice(requestId, adminId, { utilityCosts, manualVaNumber }) {
     const request = await prisma.rentalRequest.findUnique({
       where: { id: requestId },
-      include: { asset: true }
+      include: { asset: true, tenantUser: true }
     });
 
     if (!request || request.status !== 'APPROVED') {
@@ -88,6 +89,36 @@ class BillingService {
       await tx.rentalRequest.update({
         where: { id: requestId },
         data: { status: 'INVOICE_GENERATED' }
+      });
+
+      // Enqueue PDF Generation
+      const pdfData = {
+        invoiceNo: invoice.invoiceNo,
+        tenantName: request.tenantUser.fullName,
+        tenantEmail: request.tenantUser.email,
+        tenantOrganization: request.tenantUser.organization || '-',
+        issueDate: issueDate.toLocaleDateString('id-ID'),
+        dueDate: dueDate.toLocaleDateString('id-ID'),
+        status: invoice.status,
+        statusColor: '#ef4444', // red
+        assetName: request.asset.name,
+        eventName: request.eventName,
+        startDatetime: request.startDatetime.toLocaleString('id-ID'),
+        endDatetime: request.endDatetime.toLocaleString('id-ID'),
+        units: priceResult ? priceResult.units : Math.ceil((new Date(request.endDatetime) - new Date(request.startDatetime)) / (1000 * 60 * 60 * 24)),
+        unitType: priceResult ? priceResult.unitType : 'Hari',
+        basePrice: priceResult ? (priceResult.subtotal / priceResult.units).toLocaleString('id-ID') : '1.000.000',
+        subtotal: invoice.subtotal.toLocaleString('id-ID'),
+        deposit: priceResult && priceResult.deposit > 0 ? priceResult.deposit.toLocaleString('id-ID') : null,
+        tax: invoice.taxAmount.toLocaleString('id-ID'),
+        total: invoice.totalAmount.toLocaleString('id-ID'),
+        manualVaNumber: invoice.manualVaNumber || '-'
+      };
+      
+      pdfQueue.add('generate-invoice', {
+        type: 'invoice',
+        data: pdfData,
+        referenceId: invoice.id
       });
 
       return invoice;
@@ -175,7 +206,7 @@ class BillingService {
   async generateContract(requestId, adminId) {
     const request = await prisma.rentalRequest.findUnique({
       where: { id: requestId },
-      include: { invoice: true }
+      include: { invoice: true, asset: true, tenantUser: true }
     });
 
     if (!request) throw new Error('Pengajuan tidak ditemukan.');
@@ -218,6 +249,30 @@ class BillingService {
           changedBy: adminId,
           note: `Kontrak ${contractNo} diterbitkan. Menunggu pembayaran dari penyewa.`
         }
+      });
+
+      // Enqueue Contract PDF Generation
+      const pdfData = {
+        contractNo: contract.contractNo,
+        signedDate: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+        tenantName: request.tenantUser.fullName,
+        tenantOrganization: request.tenantUser.organization || '-',
+        tenantEmail: request.tenantUser.email,
+        tenantPhone: request.tenantUser.phone || '-',
+        assetName: request.asset.name,
+        assetLocation: request.asset.location || '-',
+        eventName: request.eventName,
+        startDatetime: request.startDatetime.toLocaleString('id-ID'),
+        endDatetime: request.endDatetime.toLocaleString('id-ID'),
+        contractValue: contract.contractValue.toLocaleString('id-ID'),
+        contractValueTerbilang: '(Dalam angka rupiah)',
+        invoiceNo: request.invoice.invoiceNo
+      };
+
+      pdfQueue.add('generate-contract', {
+        type: 'contract',
+        data: pdfData,
+        referenceId: contract.id
       });
 
       return contract;

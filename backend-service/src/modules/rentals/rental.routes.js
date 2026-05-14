@@ -19,7 +19,17 @@ router.post('/', checkRole(['PENYEWA']), validateRequest(createRentalSchema), re
 // Update draft/revision
 router.put('/:id', checkRole(['PENYEWA']), validateRequest(updateRentalSchema), rentalController.updateDraft);
 // Upload document
-router.post('/:id/documents', checkRole(['PENYEWA']), rentalController.uploadDocument);
+const { upload } = require('../../shared/utils/s3Uploader');
+router.post(
+  '/:id/documents', 
+  checkRole(['PENYEWA']), 
+  (req, res, next) => {
+    req.uploadFolder = `rentals/${req.params.id}`;
+    next();
+  },
+  upload.single('file'), 
+  rentalController.uploadDocument
+);
 // Submit request
 router.post('/:id/submit', checkRole(['PENYEWA']), rentalController.submitRequest);
 
