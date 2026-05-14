@@ -135,6 +135,36 @@ class AssetController {
       res.status(500).json({ message: error.message });
     }
   }
+  async getRentalHistory(req, res) {
+    try {
+      const { id } = req.params;
+      const { prisma } = require('../../config/db');
+      const history = await prisma.rentalRequest.findMany({
+        where: { assetId: id },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          tenantUser: {
+            select: { fullName: true, email: true, organization: true }
+          },
+          invoice: { select: { totalAmount: true, status: true } }
+        }
+      });
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  async deleteMedia(req, res) {
+    try {
+      const { mediaId } = req.params;
+      const { prisma } = require('../../config/db');
+      await prisma.assetMedia.delete({ where: { id: mediaId } });
+      res.json({ message: 'Media deleted successfully' });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
 }
 
 module.exports = new AssetController();

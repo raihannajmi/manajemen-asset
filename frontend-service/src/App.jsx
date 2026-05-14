@@ -17,6 +17,8 @@ import RentalDetail from './pages/rentals/RentalDetail';
 import VerifyPayments from './pages/approvals/VerifyPayments';
 import AdditionalAssets from './pages/assets/AdditionalAssets';
 import Dashboard from './pages/Dashboard';
+import AuditLogList from './pages/audit/AuditLogList';
+import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
 
@@ -46,8 +48,10 @@ function App() {
           
           <Route path="/verify-payments" element={accessToken ? <DashboardLayout><VerifyPayments /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/additional-assets" element={accessToken ? <DashboardLayout><AdditionalAssets /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/audit-logs" element={accessToken ? <DashboardLayout><AuditLogList /></DashboardLayout> : <Navigate to="/login" />} />
 
           <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </QueryClientProvider>

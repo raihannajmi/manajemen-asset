@@ -34,8 +34,8 @@ router.post(
 router.post('/:id/submit', checkRole(['PENYEWA']), rentalController.submitRequest);
 
 // Sprint 4: Admin & Pimpinan Actions
-// Verify request (Admin -> PENDING_APPROVAL)
-router.post('/:id/verify', checkRole(['ADMIN_ASET']), validateRequest(actionNoteSchema), rentalController.verifyRequest);
+// Verify request (Admin/Pimpinan -> PENDING_APPROVAL)
+router.post('/:id/verify', checkRole(['ADMIN_ASET', 'PIMPINAN']), validateRequest(actionNoteSchema), rentalController.verifyRequest);
 // Approve request (Pimpinan -> APPROVED/REJECTED/REVISION)
 router.post('/:id/approve', checkRole(['PIMPINAN']), validateRequest(approveSchema), rentalController.approveRequest);
 

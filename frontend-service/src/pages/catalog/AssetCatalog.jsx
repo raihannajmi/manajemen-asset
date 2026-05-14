@@ -72,7 +72,14 @@ const AssetCatalog = () => {
                 <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                   <div>
                     <p className="text-xs text-slate-500">Mulai dari</p>
-                    <p className="text-lg font-bold text-blue-600">Rp {asset.pricingSchemeJson?.daily || asset.pricingSchemeJson?.hourly || '0'}</p>
+                    {asset.pricingSchemeJson?.base_price != null ? (
+                      <p className="text-lg font-bold text-blue-600">
+                        Rp {Number(asset.pricingSchemeJson.base_price).toLocaleString('id-ID')}
+                        <span className="text-xs font-normal text-slate-400 ml-1">/{asset.pricingSchemeJson.unit === 'hour' ? 'jam' : asset.pricingSchemeJson.unit === 'day' ? 'hari' : asset.pricingSchemeJson.unit === 'week' ? 'minggu' : 'bulan'}</span>
+                      </p>
+                    ) : (
+                      <p className="text-sm font-medium text-slate-500">Hubungi Admin</p>
+                    )}
                   </div>
                   <div className="px-4 py-2 bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg group-hover:bg-blue-50 group-hover:text-blue-700 transition-colors">
                     Lihat Detail

@@ -45,4 +45,10 @@ router.post(
   assetController.uploadMedia
 );
 
+// Rental History for an Asset (Admin/Pimpinan)
+router.get('/:id/history', requireAdmin, assetController.getRentalHistory);
+
+// Delete Media
+router.delete('/:id/media/:mediaId', requireAdmin, assetController.deleteMedia);
+
 module.exports = router;

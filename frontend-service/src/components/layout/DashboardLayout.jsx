@@ -31,15 +31,20 @@ const DashboardLayout = ({ children }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['ADMIN_ASET', 'PIMPINAN', 'PENYEWA'] },
-    { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET'] },
+    // Admin & Pimpinan - Asset Management
+    { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Manajemen Aset', icon: <Package size={20} />, path: '/assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
-    { name: 'Katalog Aset', icon: <Package size={20} />, path: '/catalog', roles: ['PENYEWA'] },
-    { name: 'Aset Tambahan', icon: <Package size={20} />, path: '/additional-assets', roles: ['ADMIN_ASET'] },
-    { name: 'Pengajuan Saya', icon: <FileText size={20} />, path: '/my-rentals', roles: ['PENYEWA'] },
-    { name: 'Verifikasi Pengajuan', icon: <FileText size={20} />, path: '/verify-rentals', roles: ['ADMIN_ASET'] },
-    { name: 'Verifikasi Pembayaran', icon: <FileText size={20} />, path: '/verify-payments', roles: ['ADMIN_ASET'] },
+    { name: 'Aset Tambahan', icon: <Package size={20} />, path: '/additional-assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    // Admin & Pimpinan - Approval
+    { name: 'Verifikasi Pengajuan', icon: <FileText size={20} />, path: '/verify-rentals', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    { name: 'Verifikasi Pembayaran', icon: <FileText size={20} />, path: '/verify-payments', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    // Pimpinan only - final approval
     { name: 'Persetujuan', icon: <FileText size={20} />, path: '/approvals', roles: ['PIMPINAN'] },
-    { name: 'Riwayat Audit', icon: <History size={20} />, path: '/audit-logs', roles: ['ADMIN_ASET'] },
+    // Admin & Pimpinan - audit
+    { name: 'Riwayat Audit', icon: <History size={20} />, path: '/audit-logs', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    // Penyewa
+    { name: 'Katalog Aset', icon: <Package size={20} />, path: '/catalog', roles: ['PENYEWA'] },
+    { name: 'Pengajuan Saya', icon: <FileText size={20} />, path: '/my-rentals', roles: ['PENYEWA'] },
   ];
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(user?.role));

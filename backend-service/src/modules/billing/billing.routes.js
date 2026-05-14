@@ -11,7 +11,7 @@ router.use(verifyToken);
 router.get('/invoices/:id', billingController.getInvoiceById);
 
 // Generate invoice (relates to rental request ID)
-router.post('/rentals/:id/invoices', checkRole(['ADMIN_ASET']), billingController.generateInvoice);
+router.post('/rentals/:id/invoices', checkRole(['ADMIN_ASET', 'PIMPINAN']), billingController.generateInvoice);
 
 // --- Payments ---
 // Tenant uploads payment proof for an invoice
@@ -27,11 +27,11 @@ router.post(
   billingController.uploadPaymentProof
 );
 
-// Admin verifies payment
-router.post('/payments/:id/verify', checkRole(['ADMIN_ASET']), billingController.verifyPayment);
+// Admin/Pimpinan verifies payment
+router.post('/payments/:id/verify', checkRole(['ADMIN_ASET', 'PIMPINAN']), billingController.verifyPayment);
 
 // --- Contracts ---
 // Generate contract for an active rental
-router.post('/rentals/:id/contracts', checkRole(['ADMIN_ASET']), billingController.generateContract);
+router.post('/rentals/:id/contracts', checkRole(['ADMIN_ASET', 'PIMPINAN']), billingController.generateContract);
 
 module.exports = router;

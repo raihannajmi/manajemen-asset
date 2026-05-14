@@ -33,6 +33,7 @@ const AssetManagement = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [uploadingImageFor, setUploadingImageFor] = useState(null); // assetId for image upload
 
   const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(assetSchema),
@@ -99,6 +100,29 @@ const AssetManagement = () => {
     mutationFn: (id) => api.delete(`/assets/${id}`),
     onSuccess: () => queryClient.invalidateQueries(['assets']),
     onError: (err) => alert(err.response?.data?.message || 'Gagal menghapus aset')
+  });
+
+  const uploadImageMutation = useMutation({
+    mutationFn: async ({ assetId, file }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('mediaType', 'IMAGE');
+      return api.post(`/assets/${assetId}/media`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['assets']);
+      setUploadingImageFor(null);
+      alert('Foto berhasil diunggah ke Cloudflare R2!');
+    },
+    onError: (err) => alert(err.response?.data?.message || 'Gagal upload foto')
+  });
+
+  const deleteMediaMutation = useMutation({
+    mutationFn: ({ assetId, mediaId }) => api.delete(`/assets/${assetId}/media/${mediaId}`),
+    onSuccess: () => queryClient.invalidateQueries(['assets']),
+    onError: (err) => alert(err.response?.data?.message || 'Gagal menghapus foto')
   });
 
   const onSubmit = (data) => {
@@ -175,6 +199,7 @@ const AssetManagement = () => {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Foto</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Aset</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Kategori</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
@@ -191,16 +216,52 @@ const AssetManagement = () => {
                 </tr>
               ) : assets.map((asset) => (
                 <tr key={asset.id} className="hover:bg-slate-50 transition-colors">
+                  {/* Thumbnail */}
                   <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 flex-shrink-0 bg-slate-100 rounded-lg flex items-center justify-center">
-                        <Package size={20} className="text-slate-500" />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-slate-900">{asset.name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{asset.assetCode}</div>
+                    <div className="h-12 w-16 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative group cursor-pointer"
+                      onClick={() => setUploadingImageFor(uploadingImageFor === asset.id ? null : asset.id)}
+                    >
+                      {asset.media?.[0] ? (
+                        <img src={asset.media[0].fileUrl} alt={asset.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center">
+                          <span className="text-[10px] text-slate-400 text-center leading-tight">Klik upload</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-blue-600/70 hidden group-hover:flex items-center justify-center">
+                        <span className="text-white text-[10px] font-bold">📷 Ganti</span>
                       </div>
                     </div>
+                    {/* Inline image upload input */}
+                    {uploadingImageFor === asset.id && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
+                        <label className="block text-[11px] font-bold text-blue-700 mb-1">Upload Foto (R2)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="text-xs w-full"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              uploadImageMutation.mutate({ assetId: asset.id, file: e.target.files[0] });
+                            }
+                          }}
+                        />
+                        {uploadImageMutation.isPending && <p className="text-[10px] text-blue-600 mt-1 animate-pulse">Mengupload...</p>}
+                        {asset.media?.length > 0 && (
+                          <button
+                            onClick={() => deleteMediaMutation.mutate({ assetId: asset.id, mediaId: asset.media[0].id })}
+                            className="text-[10px] text-red-500 hover:text-red-700 mt-1 block"
+                          >
+                            🗑 Hapus foto saat ini
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  {/* Asset Info */}
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-slate-900">{asset.name}</div>
+                    <div className="text-xs text-slate-500 font-mono">{asset.assetCode}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-slate-700">
