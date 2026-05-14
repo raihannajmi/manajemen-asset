@@ -23,6 +23,39 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  backend:
+    build: 
+      context: ./backend-service
+      dockerfile: Dockerfile
+    container_name: asset_management_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://postgres:mysecretpassword@db:5432/manajemen_asset?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # Add other required environment variables or load from .env
+    env_file:
+      - ./backend-service/.env
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend-service
+      dockerfile: Dockerfile
+    container_name: asset_management_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
