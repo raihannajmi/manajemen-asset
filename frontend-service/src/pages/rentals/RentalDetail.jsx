@@ -321,24 +321,34 @@ const RentalDetail = () => {
               {/* Upload Payment Proof for Tenant - only when WAITING_PAYMENT */}
               {isTenant && rental.status === 'WAITING_PAYMENT' && rental.invoice.status === 'UNPAID' && (
                 <div className="space-y-3 pt-2">
-                  <p className="text-sm font-medium text-slate-700">Transfer ke nomor VA di atas, lalu unggah bukti transfer Anda:</p>
-                  <button
-                    onClick={async () => {
-                      const proofUrl = prompt('Masukkan link gambar bukti transfer (Mock):', 'https://mock-image.com/bukti.jpg');
-                      if (proofUrl) {
-                        try {
-                          await api.post(`/invoices/${rental.invoice.id}/payments`, { amount: rental.invoice.totalAmount, transferDate: new Date().toISOString(), proofUrl });
-                          alert('Bukti pembayaran berhasil diunggah!');
-                          queryClient.invalidateQueries(['rental', id]);
-                        } catch (e) {
-                          alert('Gagal: ' + e.response?.data?.message);
-                        }
-                      }
-                    }}
-                    className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition"
-                  >
+                  <p className="text-sm font-medium text-slate-700">Transfer ke nomor VA di atas, lalu unggah bukti transfer Anda (JPEG/PNG/PDF):</p>
+                  <label className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition cursor-pointer flex justify-center items-center">
                     Upload Bukti Bayar
-                  </button>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf"
+                      className="hidden"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          const formData = new FormData();
+                          formData.append('amount', rental.invoice.totalAmount);
+                          formData.append('transferDate', new Date().toISOString());
+                          formData.append('file', file);
+                          
+                          try {
+                            await api.post(`/invoices/${rental.invoice.id}/payments`, formData, {
+                              headers: { 'Content-Type': 'multipart/form-data' }
+                            });
+                            alert('Bukti pembayaran berhasil diunggah!');
+                            queryClient.invalidateQueries(['rental', id]);
+                          } catch (err) {
+                            alert('Gagal: ' + (err.response?.data?.message || err.message));
+                          }
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
               )}
             </div>

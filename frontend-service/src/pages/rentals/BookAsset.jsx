@@ -151,10 +151,16 @@ const BookAsset = () => {
 
   const uploadDocMutation = useMutation({
     mutationFn: async () => {
-      // Mock upload. In real scenario, use FormData
-      const res = await api.post(`/rentals/${draftId}/documents`, {
-        docType: 'SURAT_PENGANTAR',
-        fileUrl: 'https://placeholder.url/surat_pengantar.pdf'
+      if (!docFile) throw new Error('Pilih file dokumen terlebih dahulu');
+      
+      const formData = new FormData();
+      formData.append('docType', 'SURAT_PENGANTAR');
+      formData.append('file', docFile);
+
+      const res = await api.post(`/rentals/${draftId}/documents`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       return res.data;
     },
@@ -283,12 +289,24 @@ const BookAsset = () => {
               <FileText className="mr-2 text-blue-600" /> Upload Dokumen
             </h2>
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-blue-800 text-sm mb-6">
-              Silakan unggah Surat Pengantar resmi atau Proposal Kegiatan dalam format PDF. (Mock upload)
+              Silakan unggah Surat Pengantar resmi atau Proposal Kegiatan dalam format PDF.
             </div>
             
-            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:bg-slate-50 transition-colors cursor-pointer">
+            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:bg-slate-50 transition-colors relative">
+              <input 
+                type="file" 
+                accept=".pdf" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setDocFile(e.target.files[0]);
+                  }
+                }}
+              />
               <Upload className="mx-auto text-slate-400 mb-4" size={40} />
-              <p className="text-slate-600 font-medium">Klik untuk memilih file dokumen</p>
+              <p className="text-slate-600 font-medium">
+                {docFile ? docFile.name : 'Klik atau drag untuk memilih file dokumen'}
+              </p>
               <p className="text-xs text-slate-400 mt-1">PDF max 5MB</p>
             </div>
 
