@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, Loader2, Tag } from 'lucide-react';
 import api from '../../lib/axios';
@@ -54,8 +54,8 @@ const AssetCategory = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Kategori Aset</h1>
-          <p className="text-slate-500 text-sm mt-1">Kelola daftar klasifikasi dan kategori aset kampus.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Kategori Bangunan</h1>
+          <p className="text-slate-500 text-sm mt-1">Kelola klasifikasi bangunan yang dipakai untuk aset dan form penyewaan.</p>
         </div>
         <button 
           onClick={() => openModal()}
@@ -120,7 +120,7 @@ const AssetCategory = () => {
                   required
                   type="text"
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Contoh: BGN, KND, ELK"
+                  placeholder="Contoh: ASRAMA, KANTIN, GEDUNG"
                   value={formData.code}
                   onChange={(e) => setFormData({...formData, code: e.target.value})}
                 />
@@ -131,7 +131,7 @@ const AssetCategory = () => {
                   required
                   type="text"
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Contoh: Bangunan/Gedung"
+                  placeholder="Contoh: Asrama, Kantin, Gedung, Gedung Kewirausahaan"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                 />

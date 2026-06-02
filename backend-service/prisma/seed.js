@@ -2,6 +2,29 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+  const categories = [
+    {
+      code: 'ASRAMA',
+      name: 'Asrama',
+      description: 'Bangunan untuk penginapan mahasiswa atau tamu dalam jangka waktu tertentu.',
+    },
+    {
+      code: 'KANTIN',
+      name: 'Kantin',
+      description: 'Bangunan atau ruang untuk tenant dan pelaku usaha berjualan.',
+    },
+    {
+      code: 'GEDUNG',
+      name: 'Gedung',
+      description: 'Bangunan serbaguna untuk kegiatan, acara, dan program kampus.',
+    },
+    {
+      code: 'GEDUNG_KEWIRAUSAHAAN',
+      name: 'Gedung Kewirausahaan',
+      description: 'Bangunan untuk aktivitas kewirausahaan, inkubasi, dan pengembangan usaha.',
+    },
+  ];
+
   const roles = [
     { code: 'PIMPINAN', name: 'Pimpinan / Direktur' },
     { code: 'ADMIN_ASET', name: 'Admin Manajemen Aset' },
@@ -16,6 +39,15 @@ async function main() {
     });
   }
   console.log('Roles seeded successfully');
+
+  for (const category of categories) {
+    await prisma.assetCategory.upsert({
+      where: { code: category.code },
+      update: { name: category.name, description: category.description },
+      create: category,
+    });
+  }
+  console.log('Asset categories seeded successfully');
 
   // Fetch roles
   const pimpinanRole = await prisma.role.findUnique({ where: { code: 'PIMPINAN' } });

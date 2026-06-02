@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Calendar, Users, MapPin, FileText, CheckCircle, XCircle, AlertTriangle, FileSignature, Activity, Clock, Shield, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, CheckCircle, AlertTriangle, FileSignature, Activity, Clock, Shield } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import api from '../../lib/axios';
 
@@ -24,6 +24,10 @@ const RentalDetail = () => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [note, setNote] = useState('');
+  const [manualVaNumber, setManualVaNumber] = useState('');
+  const [utilityAmount, setUtilityAmount] = useState('');
+  const [utilityLabel, setUtilityLabel] = useState('Biaya utilitas');
+  const [bankName, setBankName] = useState('BNI');
 
   const { data: rental, isLoading } = useQuery({
     queryKey: ['rental', id],
@@ -59,6 +63,28 @@ const RentalDetail = () => {
       queryClient.invalidateQueries(['order-timeline', id]);
       queryClient.invalidateQueries(['orders']);
       navigate('/orders');
+    }
+  });
+
+  const generateInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      const utilityCosts = utilityAmount
+        ? [{ name: utilityLabel.trim() || 'Biaya utilitas', amount: Number(utilityAmount) }]
+        : [];
+
+      return api.post(`/rentals/${id}/invoices`, {
+        manualVaNumber: manualVaNumber.trim(),
+        utilityCosts,
+        bankName,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['rental', id]);
+      queryClient.invalidateQueries(['order-timeline', id]);
+      setManualVaNumber('');
+      setUtilityAmount('');
+      setUtilityLabel('Biaya utilitas');
+      setBankName('BNI');
     }
   });
 
@@ -265,33 +291,66 @@ const RentalDetail = () => {
               <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center"><FileText className="mr-2 text-indigo-600" size={20} /> Terbitkan Invoice</h3>
               <p className="text-sm text-slate-500 mb-4">Pengajuan telah disetujui Pimpinan. Masukkan Nomor VA lalu terbitkan invoice agar tagihan resmi dapat dibuat.</p>
               
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Nomor Virtual Account (VA) Pembayaran</label>
-                <input 
-                  type="text" 
-                  id="vaNumber"
-                  placeholder="Contoh: 88000123456789" 
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                />
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Nomor Virtual Account (VA) Pembayaran</label>
+                  <input 
+                    type="text" 
+                    value={manualVaNumber}
+                    onChange={(e) => setManualVaNumber(e.target.value)}
+                    placeholder="Contoh: 88000123456789" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Bank Penerima VA</label>
+                  <select
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="BNI">BNI (Bank Negara Indonesia)</option>
+                    <option value="BTN">BTN (Bank Tabungan Negara)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Label Biaya Tambahan</label>
+                  <input
+                    type="text"
+                    value={utilityLabel}
+                    onChange={(e) => setUtilityLabel(e.target.value)}
+                    placeholder="Contoh: Listrik / Kebersihan"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Nominal Biaya Tambahan</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={utilityAmount}
+                    onChange={(e) => setUtilityAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
               </div>
 
               <button
-                onClick={async () => {
-                  const vaInput = document.getElementById('vaNumber').value;
-                  if (!vaInput) {
+                onClick={() => {
+                  if (!manualVaNumber.trim()) {
                     alert('Harap masukkan Nomor Virtual Account terlebih dahulu!');
                     return;
                   }
-                  try {
-                    await api.post(`/rentals/${id}/invoices`, { manualVaNumber: vaInput });
-                    queryClient.invalidateQueries(['rental', id]);
-                  } catch (e) {
-                    alert('Gagal membuat invoice: ' + e.response?.data?.message);
-                  }
+                  generateInvoiceMutation.mutate();
                 }}
+                disabled={generateInvoiceMutation.isPending}
                 className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition"
               >
-                Generate Invoice
+                {generateInvoiceMutation.isPending ? 'Menerbitkan Invoice...' : 'Generate Invoice'}
               </button>
             </div>
           )}
@@ -437,7 +496,6 @@ const RentalDetail = () => {
                 <div className="space-y-3">
                   {(timelineData?.timeline || []).map((entry, idx) => {
                     const isStatusChange = entry.type === 'STATUS_CHANGE';
-                    const isAudit = entry.type === 'AUDIT';
 
                     const dotColor = isStatusChange
                       ? (entry.action === 'APPROVED' || entry.action === 'ACTIVE_RENTAL' || entry.action === 'COMPLETED') ? 'bg-green-500'

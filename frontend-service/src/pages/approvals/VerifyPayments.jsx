@@ -1,38 +1,40 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CreditCard, Loader2, Search, Check, X } from 'lucide-react';
+import { CreditCard, Loader2, Check, X, FileText } from 'lucide-react';
 import api from '../../lib/axios';
 
 const VerifyPayments = () => {
   const queryClient = useQueryClient();
-  const [selectedPayment, setSelectedPayment] = useState(null);
   const [note, setNote] = useState('');
-
-  // We should actually fetch payments, but for this mock we'll just get invoices with PENDING payments
-  // Or create a dedicated endpoint. Since we don't have a GET /payments, we'll assume we can fetch invoices 
-  // that have PENDING payments. To make it simple, let's fetch rentals that are INVOICE_GENERATED.
-  // Ideally, there should be a `GET /payments?status=PENDING`. Let's mock the data fetching for now 
-  // or use rentals endpoint.
   
   const { data: rentals = [], isLoading } = useQuery({
     queryKey: ['pendingPayments'],
     queryFn: async () => {
-      const res = await api.get('/rentals?status=INVOICE_GENERATED');
-      // Filter out those without pending payments (mocking logic on FE for now)
+      const res = await api.get('/rentals', {
+        params: { status: 'WAITING_PAYMENT' }
+      });
       return res.data;
     }
   });
 
-  // Mock verify action since we don't have a direct payment list endpoint
+  const rows = rentals
+    .map((rental) => {
+      const pendingPayment = rental.invoice?.payments?.[0];
+      return pendingPayment ? { rental, payment: pendingPayment } : null;
+    })
+    .filter(Boolean);
+
   const verifyMutation = useMutation({
     mutationFn: async ({ paymentId, status }) => {
       return api.post(`/payments/${paymentId}/verify`, { status, note });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pendingPayments']);
-      setSelectedPayment(null);
       setNote('');
       alert('Pembayaran berhasil diproses');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Gagal memproses pembayaran');
     }
   });
 
@@ -43,11 +45,22 @@ const VerifyPayments = () => {
         <p className="text-slate-500 text-sm mt-1">Periksa bukti transfer dari penyewa untuk mengaktifkan sewa.</p>
       </div>
 
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <label className="block text-sm font-semibold text-slate-700 mb-2">Catatan Verifikasi</label>
+        <textarea
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+          placeholder="Isi alasan jika menolak pembayaran, atau catatan singkat verifikasi..."
+        />
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={32} /></div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          {rentals.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="text-center py-20">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
                 <CreditCard size={32} className="text-slate-300" />
@@ -67,10 +80,7 @@ const VerifyPayments = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
-                {rentals.map((rental) => {
-                  // In a real app, we'd loop through payments.
-                  // This is a UI mockup structure since we didn't build the specific GET /payments endpoint.
-                  // Assuming the latest payment is accessible if we expand the API.
+                {rows.map(({ rental, payment }) => {
                   return (
                     <tr key={rental.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -80,14 +90,33 @@ const VerifyPayments = () => {
                         <div className="text-sm font-bold text-slate-900">{rental.tenantUser?.fullName}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-slate-900">Rp {(1000000).toLocaleString('id-ID')}</div>
+                        <div className="text-sm font-bold text-slate-900">Rp {rental.invoice?.totalAmount?.toLocaleString('id-ID') || '-'}</div>
+                        <div className="text-xs text-slate-500 mt-0.5 font-mono">{rental.invoice?.invoiceNo || '-'}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 underline cursor-pointer">
-                        Lihat Bukti
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
+                        <a href={payment.proofUrl} target="_blank" rel="noreferrer" className="underline inline-flex items-center gap-1">
+                          <FileText size={14} /> Lihat Bukti
+                        </a>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-green-600 hover:text-green-900 mr-4">Approve</button>
-                        <button className="text-red-600 hover:text-red-900">Reject</button>
+                        <button
+                          onClick={() => {
+                            verifyMutation.mutate({ paymentId: payment.id, status: 'VERIFIED' });
+                          }}
+                          disabled={verifyMutation.isPending}
+                          className="text-green-600 hover:text-green-900 mr-4 inline-flex items-center gap-1 disabled:opacity-60"
+                        >
+                          <Check size={16} /> Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            verifyMutation.mutate({ paymentId: payment.id, status: 'REJECTED' });
+                          }}
+                          disabled={verifyMutation.isPending}
+                          className="text-red-600 hover:text-red-900 inline-flex items-center gap-1 disabled:opacity-60"
+                        >
+                          <X size={16} /> Reject
+                        </button>
                       </td>
                     </tr>
                   )

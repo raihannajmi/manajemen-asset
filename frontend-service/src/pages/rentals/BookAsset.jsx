@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Calendar, Users, FileText, Upload } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, FileText, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../../lib/axios';
@@ -79,7 +79,7 @@ const BookAsset = () => {
   const [draftId, setDraftId] = useState(isEditing ? id : null);
   const [error, setError] = useState('');
 
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
     resolver: zodResolver(bookAssetSchema),
     defaultValues: {
       eventName: '',
@@ -90,7 +90,66 @@ const BookAsset = () => {
     }
   });
 
-  const formData = watch(); // For displaying in step 3
+  const getBookingContext = (asset) => {
+    const categoryCode = asset?.category?.code?.toUpperCase();
+    const categoryName = asset?.category?.name?.toLowerCase() || '';
+
+    if (categoryCode === 'ASRAMA' || categoryName.includes('asrama')) {
+      return {
+        title: 'Form Pengajuan Asrama',
+        subtitle: 'Isi data penginapan, durasi, dan jumlah penghuni yang akan menginap.',
+        eventLabel: 'Nama Penghuni / Kegiatan',
+        eventPlaceholder: 'Contoh: Penempatan Mahasiswa Magang',
+        participantLabel: 'Jumlah Penghuni',
+        participantPlaceholder: 'Contoh: 2',
+        purposeLabel: 'Tujuan Penginapan',
+        purposePlaceholder: 'Jelaskan kebutuhan menginap, tanggal masuk, dan kebutuhan khusus lainnya.',
+      };
+    }
+
+    if (categoryCode === 'KANTIN' || categoryName.includes('kantin')) {
+      return {
+        title: 'Form Pengajuan Kantin',
+        subtitle: 'Gunakan form ini untuk tenant atau pelaku usaha yang ingin berjualan dalam periode tertentu.',
+        eventLabel: 'Nama Tenant / Usaha',
+        eventPlaceholder: 'Contoh: Kopi Pagi Sejahtera',
+        participantLabel: 'Jumlah Personel',
+        participantPlaceholder: 'Contoh: 3',
+        purposeLabel: 'Rencana Usaha / Keterangan',
+        purposePlaceholder: 'Jelaskan jenis usaha, produk yang dijual, dan kebutuhan operasional.',
+      };
+    }
+
+    if (categoryCode === 'GEDUNG' || categoryCode === 'GEDUNG_KEWIRAUSAHAAN' || categoryName.includes('gedung')) {
+      return {
+        title: 'Form Pengajuan Gedung',
+        subtitle: 'Form ini dipakai untuk kegiatan, acara, pelatihan, atau program yang membutuhkan ruang gedung.',
+        eventLabel: 'Nama Kegiatan / Program',
+        eventPlaceholder: 'Contoh: Seminar Nasional Inovasi Kampus',
+        participantLabel: 'Jumlah Peserta',
+        participantPlaceholder: 'Contoh: 120',
+        purposeLabel: 'Tujuan Kegiatan',
+        purposePlaceholder: 'Jelaskan tujuan acara, format kegiatan, dan kebutuhan ruang yang diperlukan.',
+      };
+    }
+
+    return {
+      title: 'Form Pengajuan Sewa',
+      subtitle: 'Lengkapi detail penggunaan aset, durasi sewa, dan tujuan pemakaian.',
+      eventLabel: 'Nama Acara / Penggunaan',
+      eventPlaceholder: 'Contoh: Seminar Nasional Teknologi',
+      participantLabel: 'Jumlah Peserta / Pengguna',
+      participantPlaceholder: 'Contoh: 50',
+      purposeLabel: 'Tujuan / Keterangan',
+      purposePlaceholder: 'Deskripsikan tujuan penyewaan dan kebutuhan penggunaan aset.',
+    };
+  };
+
+  const eventName = useWatch({ control, name: 'eventName' });
+  const startDatetime = useWatch({ control, name: 'startDatetime' });
+  const endDatetime = useWatch({ control, name: 'endDatetime' });
+  const participantCount = useWatch({ control, name: 'participantCount' });
+  const purpose = useWatch({ control, name: 'purpose' });
 
   // Fetch Existing Rental if Editing
   const { data: rentalData, isLoading: isLoadingRental } = useQuery({
@@ -131,6 +190,8 @@ const BookAsset = () => {
       return res.data;
     }
   });
+
+  const bookingContext = getBookingContext(asset);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -181,12 +242,6 @@ const BookAsset = () => {
     onError: (err) => setError(err.response?.data?.message || 'Gagal submit pengajuan')
   });
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    setError('');
-    saveMutation.mutate(formData);
-  };
-
   const isLoading = isLoadingAsset || (isEditing && isLoadingRental);
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={32} /></div>;
@@ -204,8 +259,37 @@ const BookAsset = () => {
       )}
 
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">{isEditing ? 'Revisi Pengajuan' : 'Form Pengajuan Sewa'}</h1>
-        <p className="text-slate-500 mt-1">Aset: <span className="font-bold text-slate-800">{asset?.name}</span></p>
+        <h1 className="text-3xl font-bold text-slate-900">{isEditing ? 'Revisi Pengajuan' : bookingContext.title}</h1>
+        <p className="text-slate-500 mt-1">{bookingContext.subtitle}</p>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm grid grid-cols-1 md:grid-cols-[240px,1fr]">
+        <div className="aspect-[4/3] md:aspect-auto bg-slate-100 overflow-hidden">
+          {asset?.media?.[0] ? (
+            <img src={asset.media[0].fileUrl} alt={asset.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full min-h-48 flex items-center justify-center text-slate-400 text-sm px-4 text-center">
+              Belum ada foto aset. Gambar akan membantu pengguna mengenali aset yang dipilih.
+            </div>
+          )}
+        </div>
+        <div className="p-6 space-y-3">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider">
+            {asset?.category?.name || 'Kategori tidak tersedia'}
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900">{asset?.name}</h2>
+          <p className="text-sm text-slate-600">{asset?.location || 'Lokasi tidak disebutkan'}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold">Skema Sewa</p>
+              <p className="text-slate-900 font-semibold mt-1">{asset?.pricingSchemeJson?.unit || 'Belum diatur'}</p>
+            </div>
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold">Ketersediaan</p>
+              <p className="text-slate-900 font-semibold mt-1">{asset?.availableQuantity ?? 0} / {asset?.capacity ?? 0}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Progress Steps */}
@@ -228,12 +312,12 @@ const BookAsset = () => {
         {step === 1 && (
           <form onSubmit={handleSubmit((data) => saveMutation.mutate(data))} className="space-y-6">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
-              <Calendar className="mr-2 text-blue-600" /> {isEditing ? 'Perbarui Detail Acara' : 'Detail Acara'}
+              <Calendar className="mr-2 text-blue-600" /> {isEditing ? 'Perbarui Detail Penggunaan' : 'Detail Penggunaan'}
             </h2>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nama Acara</label>
-              <input type="text" {...register('eventName')} className={`w-full p-3 bg-slate-50 border rounded-xl focus:ring-blue-500 focus:border-blue-500 ${errors.eventName ? 'border-red-500' : 'border-slate-200'}`} placeholder="Contoh: Seminar Nasional Teknologi" />
+              <label className="block text-sm font-medium text-slate-700 mb-1">{bookingContext.eventLabel}</label>
+              <input type="text" {...register('eventName')} className={`w-full p-3 bg-slate-50 border rounded-xl focus:ring-blue-500 focus:border-blue-500 ${errors.eventName ? 'border-red-500' : 'border-slate-200'}`} placeholder={bookingContext.eventPlaceholder} />
               {errors.eventName && <p className="mt-1 text-xs text-red-500">{errors.eventName.message}</p>}
             </div>
 
@@ -250,19 +334,29 @@ const BookAsset = () => {
               </div>
             </div>
 
-            <input type="hidden" {...register('participantCount')} value={1} />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{bookingContext.participantLabel}</label>
+              <input
+                type="number"
+                min="1"
+                {...register('participantCount')}
+                className={`w-full p-3 bg-slate-50 border rounded-xl focus:ring-blue-500 focus:border-blue-500 ${errors.participantCount ? 'border-red-500' : 'border-slate-200'}`}
+                placeholder={bookingContext.participantPlaceholder}
+              />
+              {errors.participantCount && <p className="mt-1 text-xs text-red-500">{errors.participantCount.message}</p>}
+            </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Tujuan / Keterangan</label>
-              <textarea rows={3} {...register('purpose')} className={`w-full p-3 bg-slate-50 border rounded-xl ${errors.purpose ? 'border-red-500' : 'border-slate-200'}`} placeholder="Deskripsikan tujuan penyewaan..."></textarea>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{bookingContext.purposeLabel}</label>
+              <textarea rows={3} {...register('purpose')} className={`w-full p-3 bg-slate-50 border rounded-xl ${errors.purpose ? 'border-red-500' : 'border-slate-200'}`} placeholder={bookingContext.purposePlaceholder}></textarea>
               {errors.purpose && <p className="mt-1 text-xs text-red-500">{errors.purpose.message}</p>}
             </div>
 
-            {formData.startDatetime && formData.endDatetime && !errors.endDatetime && (
+            {startDatetime && endDatetime && !errors.endDatetime && (
               <PriceEstimate 
                 assetId={id} 
-                start={formData.startDatetime} 
-                end={formData.endDatetime} 
+                start={startDatetime} 
+                end={endDatetime} 
               />
             )}
 
@@ -319,8 +413,10 @@ const BookAsset = () => {
             <p className="text-slate-600 mb-8">Pastikan semua data sudah benar. Setelah disubmit, pengajuan akan dikirim ke Admin untuk diverifikasi.</p>
             
             <div className="bg-slate-50 p-6 rounded-xl text-left text-sm text-slate-700 mb-8 border border-slate-200">
-              <p><span className="font-semibold w-32 inline-block">Acara</span>: {formData.eventName}</p>
-              <p><span className="font-semibold w-32 inline-block">Waktu</span>: {formData.startDatetime} - {formData.endDatetime}</p>
+              <p><span className="font-semibold w-32 inline-block">{bookingContext.eventLabel}</span>: {eventName}</p>
+              <p><span className="font-semibold w-32 inline-block">{bookingContext.participantLabel}</span>: {participantCount}</p>
+              <p><span className="font-semibold w-32 inline-block">Waktu</span>: {startDatetime} - {endDatetime}</p>
+              <p><span className="font-semibold w-32 inline-block">{bookingContext.purposeLabel}</span>: {purpose}</p>
               <p><span className="font-semibold w-32 inline-block">Dokumen</span>: 1 File terlampir (Surat Pengantar)</p>
             </div>
 

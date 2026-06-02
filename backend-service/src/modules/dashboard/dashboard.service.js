@@ -39,10 +39,48 @@ class DashboardService {
     const rentedAssetIds = new Set(currentlyRented.map(r => r.assetId));
     const rentedAssets = rentedAssetIds.size;
     const availableAssets = totalAssets - rentedAssets;
+    const occupancyRate = totalAssets > 0 ? Math.round((rentedAssets / totalAssets) * 100) : 0;
     
     const revenue = await prisma.invoice.aggregate({
       where: { status: 'PAID' },
       _sum: { totalAmount: true }
+    });
+
+    // Kontrak segera berakhir dalam 30 hari ke depan
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const dueSoonRentals = await prisma.rentalRequest.findMany({
+      where: {
+        status: 'ACTIVE_RENTAL',
+        endDatetime: { gte: today, lte: thirtyDaysFromNow }
+      },
+      include: {
+        asset: { select: { name: true } },
+        tenantUser: { select: { fullName: true } }
+      },
+      orderBy: { endDatetime: 'asc' },
+      take: 5
+    });
+
+    // Ringkasan pagu vs serapan tahun berjalan
+    const fiscalYear = today.getFullYear();
+    const budgets = await prisma.budgetLimit.findMany({
+      where: { fiscalYear },
+      include: {
+        unitUsaha: true,
+        absorptions: { select: { amountAbsorbed: true } }
+      }
+    });
+
+    const budgetSummary = budgets.map(b => {
+      const absorbed = b.absorptions.reduce((sum, a) => sum + a.amountAbsorbed, 0);
+      return {
+        unitUsahaName: b.unitUsaha.name,
+        allocatedQuota: b.allocatedQuota,
+        totalAbsorbed: absorbed,
+        remaining: b.allocatedQuota - absorbed,
+        absorptionRate: b.allocatedQuota > 0 ? Math.round((absorbed / b.allocatedQuota) * 100) : 0
+      };
     });
 
     return {
@@ -50,8 +88,19 @@ class DashboardService {
         totalAssets,
         rentedAssets,
         availableAssets,
+        occupancyRate,
         totalRevenue: revenue._sum.totalAmount || 0,
-      }
+        dueSoonCount: dueSoonRentals.length
+      },
+      dueSoonRentals: dueSoonRentals.map(r => ({
+        id: r.id,
+        requestNo: r.requestNo,
+        eventName: r.eventName,
+        endDatetime: r.endDatetime,
+        assetName: r.asset.name,
+        tenantName: r.tenantUser.fullName
+      })),
+      budgetSummary
     };
   }
 

@@ -44,20 +44,18 @@ class RentalService {
   }
 
   async uploadDocument(requestId, data) {
-    // Delete existing document of same type for this request to prevent duplicates
-    await prisma.rentalRequestDocument.deleteMany({
-      where: {
-        requestId,
-        docType: data.docType
-      }
-    });
-
-    return prisma.rentalRequestDocument.create({
-      data: {
-        requestId,
-        docType: data.docType,
-        fileUrl: data.fileUrl,
-      }
+    // Use transaction to ensure atomicity: delete old then create new
+    return prisma.$transaction(async (tx) => {
+      await tx.rentalRequestDocument.deleteMany({
+        where: { requestId, docType: data.docType }
+      });
+      return tx.rentalRequestDocument.create({
+        data: {
+          requestId,
+          docType: data.docType,
+          fileUrl: data.fileUrl,
+        }
+      });
     });
   }
 
@@ -182,6 +180,14 @@ class RentalService {
       include: {
         asset: true,
         documents: true,
+        invoice: {
+          include: {
+            payments: {
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        },
+        contract: true,
         tenantUser: { select: { id: true, fullName: true, email: true, organization: true } }
       },
       orderBy: { createdAt: 'desc' }
@@ -194,6 +200,14 @@ class RentalService {
       include: {
         asset: true,
         documents: true,
+        invoice: {
+          include: {
+            payments: {
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        },
+        contract: true,
         approvals: { include: { approver: { select: { fullName: true } } }, orderBy: { actedAt: 'desc' } },
         statusHistory: { orderBy: { createdAt: 'desc' } },
         tenantUser: { select: { id: true, fullName: true, email: true, phone: true, organization: true } }

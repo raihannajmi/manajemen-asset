@@ -1,12 +1,13 @@
 const prisma = require('../../config/db');
 const { calculatePrice } = require('../../shared/utils/pricingEngine');
 const { pdfQueue } = require('../../workers/pdfWorker');
+const { terbilangRupiah, formatNumber } = require('../../shared/utils/currencyHelper');
 
 class BillingService {
   
   // --- INVOICE (Sprint 5) ---
 
-  async generateInvoice(requestId, adminId, { utilityCosts, manualVaNumber } = {}) {
+  async generateInvoice(requestId, adminId, { utilityCosts, manualVaNumber, bankName } = {}) {
     const request = await prisma.rentalRequest.findUnique({
       where: { id: requestId },
       include: { asset: true, tenantUser: true }
@@ -72,9 +73,43 @@ class BillingService {
           taxAmount,
           totalAmount,
           manualVaNumber,
+          bankName: bankName || null,
           status: 'UNPAID'
         }
       });
+
+      // Create structured invoice items (normalization)
+      const invoiceItems = [
+        {
+          invoiceId: invoice.id,
+          itemType: 'MAIN_RENTAL',
+          description: `Sewa ${request.asset.name}`,
+          amount: subtotal,
+        },
+      ];
+      if (utilityCosts && Array.isArray(utilityCosts)) {
+        for (const uc of utilityCosts) {
+          const ucName = (uc.name || '').toUpperCase();
+          const itemType = ucName.includes('LISTRIK') ? 'ELECTRICITY'
+            : ucName.includes('AIR') ? 'WATER'
+            : 'ADDITIONAL_EQUIPMENT';
+          invoiceItems.push({
+            invoiceId: invoice.id,
+            itemType,
+            description: uc.name || 'Biaya tambahan',
+            amount: uc.amount || 0,
+          });
+        }
+      }
+      if (taxAmount > 0) {
+        invoiceItems.push({
+          invoiceId: invoice.id,
+          itemType: 'TAX',
+          description: 'PPN 11%',
+          amount: taxAmount,
+        });
+      }
+      await tx.invoiceItem.createMany({ data: invoiceItems });
 
       await tx.statusHistory.create({
         data: {
@@ -108,11 +143,12 @@ class BillingService {
         units: priceResult ? priceResult.units : Math.ceil((new Date(request.endDatetime) - new Date(request.startDatetime)) / (1000 * 60 * 60 * 24)),
         unitType: priceResult ? priceResult.unitType : 'Hari',
         basePrice: priceResult ? (priceResult.subtotal / priceResult.units).toLocaleString('id-ID') : '1.000.000',
-        subtotal: invoice.subtotal.toLocaleString('id-ID'),
-        deposit: priceResult && priceResult.deposit > 0 ? priceResult.deposit.toLocaleString('id-ID') : null,
-        tax: invoice.taxAmount.toLocaleString('id-ID'),
-        total: invoice.totalAmount.toLocaleString('id-ID'),
-        manualVaNumber: invoice.manualVaNumber || '-'
+        subtotal: formatNumber(invoice.subtotal),
+        deposit: priceResult && priceResult.deposit > 0 ? formatNumber(priceResult.deposit) : null,
+        tax: formatNumber(invoice.taxAmount),
+        total: formatNumber(invoice.totalAmount),
+        manualVaNumber: invoice.manualVaNumber || '-',
+        bankName: invoice.bankName || '-',
       };
       
       pdfQueue.add('generate-invoice', {
@@ -265,7 +301,7 @@ class BillingService {
         startDatetime: request.startDatetime.toLocaleString('id-ID'),
         endDatetime: request.endDatetime.toLocaleString('id-ID'),
         contractValue: contract.contractValue.toLocaleString('id-ID'),
-        contractValueTerbilang: '(Dalam angka rupiah)',
+        contractValueTerbilang: terbilangRupiah(contract.contractValue),
         invoiceNo: request.invoice.invoiceNo
       };
 

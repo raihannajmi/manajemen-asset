@@ -190,17 +190,19 @@ model Invoice {
   issueDate        DateTime       @map("issue_date")
   dueDate          DateTime       @map("due_date")
   subtotal         Float
-  utilityCostsJson Json?          @map("utility_costs_json")
+  utilityCostsJson Json?          @map("utility_costs_json") // Deprecated: digantikan oleh InvoiceItem
   taxAmount        Float          @map("tax_amount")
   penaltyAmount    Float          @default(0) @map("penalty_amount")
   totalAmount      Float          @map("total_amount")
   manualVaNumber   String?        @map("manual_va_number")
+  bankName         String?        @map("bank_name") // BNI, BTN
   status           String         @default("UNPAID") // UNPAID, PAID, OVERDUE
   pdfUrl           String?        @map("pdf_url")
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
   payments         Payment[]
+  items            InvoiceItem[]
 
   @@index([status, dueDate])
   @@map("invoices")
@@ -255,4 +257,120 @@ model AdditionalAsset {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("additional_assets")
+}
+
+// ===================================================================
+// Sprint 2: Invoice Items (Normalisasi utilityCostsJson)
+// ===================================================================
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String   @map("invoice_id")
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemType    String   @map("item_type") // MAIN_RENTAL, ELECTRICITY, WATER, ADDITIONAL_EQUIPMENT, TAX, LATE_PENALTY
+  description String
+  amount      Float
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+// ===================================================================
+// Sprint 3: Beban Operasional
+// ===================================================================
+
+model ExpenseCategory {
+  id          Int                  @id @default(autoincrement())
+  code        String               @unique
+  name        String
+  description String?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  expenses    OperationalExpense[]
+
+  @@map("expense_categories")
+}
+
+model OperationalExpense {
+  id          String          @id @default(uuid())
+  categoryId  Int             @map("category_id")
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+  amount      Float
+  periodDate  DateTime        @map("period_date")
+  description String?
+  receiptUrl  String?         @map("receipt_url")
+  createdBy   String?         @map("created_by")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([categoryId, periodDate])
+  @@map("operational_expenses")
+}
+
+// ===================================================================
+// Sprint 4: Pagu & Penyerapan Anggaran
+// ===================================================================
+
+model UnitUsaha {
+  id        String        @id @default(uuid())
+  code      String        @unique
+  name      String
+  picName   String?       @map("pic_name")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  budgets   BudgetLimit[]
+
+  @@map("unit_usaha")
+}
+
+model BudgetLimit {
+  id             String             @id @default(uuid())
+  unitUsahaId    String             @map("unit_usaha_id")
+  unitUsaha      UnitUsaha          @relation(fields: [unitUsahaId], references: [id])
+  allocatedQuota Float              @map("allocated_quota")
+  fiscalYear     Int                @map("fiscal_year")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  absorptions    BudgetAbsorption[]
+
+  @@unique([unitUsahaId, fiscalYear])
+  @@index([fiscalYear])
+  @@map("budget_limits")
+}
+
+model BudgetAbsorption {
+  id             String      @id @default(uuid())
+  budgetLimitId  String      @map("budget_limit_id")
+  budgetLimit    BudgetLimit @relation(fields: [budgetLimitId], references: [id], onDelete: Cascade)
+  amountAbsorbed Float       @map("amount_absorbed")
+  activityName   String      @map("activity_name")
+  referenceType  String?     @map("reference_type") // OPERATIONAL_EXPENSE, INTERNAL_ACTIVITY
+  referenceId    String?     @map("reference_id")
+  receiptUrl     String?     @map("receipt_url")
+  absorbedAt     DateTime    @map("absorbed_at")
+  createdBy      String?     @map("created_by")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  @@index([budgetLimitId, absorbedAt])
+  @@map("budget_absorptions")
+}
+
+// ===================================================================
+// Sprint 5: Revenue Eksternal (Unit Usaha Luar)
+// ===================================================================
+
+model ExternalRevenue {
+  id              String   @id @default(uuid())
+  sourceUnit      String   @map("source_unit") // UNNES_PRESS, PUSLAKES, ASRAMA, BOAB, dll
+  amount          Float
+  transactionDate DateTime @map("transaction_date")
+  referenceNo     String   @unique @map("reference_no")
+  description     String?
+  importedBy      String?  @map("imported_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([sourceUnit, transactionDate])
+  @@map("external_revenues")
 }

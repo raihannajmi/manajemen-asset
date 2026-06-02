@@ -20,6 +20,11 @@ import Dashboard from './pages/Dashboard';
 import AuditLogList from './pages/audit/AuditLogList';
 import NotFound from './pages/NotFound';
 import OrderCenter from './pages/orders/OrderCenter';
+import ExpenseList from './pages/expenses/ExpenseList';
+import BudgetManagement from './pages/budgets/BudgetManagement';
+import RevenueOverview from './pages/revenue/RevenueOverview';
+import UserManagement from './pages/users/UserManagement';
+
 
 const queryClient = new QueryClient();
 
@@ -51,6 +56,12 @@ function App() {
           <Route path="/verify-payments" element={accessToken ? <DashboardLayout><VerifyPayments /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/additional-assets" element={accessToken ? <DashboardLayout><AdditionalAssets /></DashboardLayout> : <Navigate to="/login" />} />
           <Route path="/audit-logs" element={accessToken ? <DashboardLayout><AuditLogList /></DashboardLayout> : <Navigate to="/login" />} />
+
+          {/* New Modules */}
+          <Route path="/expenses" element={accessToken ? <DashboardLayout><ExpenseList /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/budgets" element={accessToken ? <DashboardLayout><BudgetManagement /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/revenue" element={accessToken ? <DashboardLayout><RevenueOverview /></DashboardLayout> : <Navigate to="/login" />} />
+          <Route path="/users" element={accessToken ? <DashboardLayout><UserManagement /></DashboardLayout> : <Navigate to="/login" />} />
 
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="*" element={<NotFound />} />

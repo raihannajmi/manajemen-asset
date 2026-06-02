@@ -10,7 +10,11 @@ import {
   Bell,
   Menu,
   X,
-  ShoppingBag
+  ShoppingBag,
+  Wallet,
+  BarChart3,
+  Users,
+  CreditCard
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 
@@ -37,6 +41,13 @@ const DashboardLayout = ({ children }) => {
     { name: 'Manajemen Aset', icon: <Package size={20} />, path: '/assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Kelola Kategori', icon: <Package size={20} />, path: '/categories', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Aset Tambahan', icon: <Package size={20} />, path: '/additional-assets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    
+    // Modul baru
+    { name: 'Beban Operasional', icon: <Wallet size={20} />, path: '/expenses', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    { name: 'Pagu Anggaran', icon: <BarChart3 size={20} />, path: '/budgets', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    { name: 'Revenue & Laporan', icon: <CreditCard size={20} />, path: '/revenue', roles: ['ADMIN_ASET', 'PIMPINAN'] },
+    { name: 'Kelola Pengguna', icon: <Users size={20} />, path: '/users', roles: ['PIMPINAN'] },
+
     { name: 'Persetujuan', icon: <FileText size={20} />, path: '/approvals', roles: ['PIMPINAN'] },
     { name: 'Verifikasi Pembayaran', icon: <FileText size={20} />, path: '/verify-payments', roles: ['ADMIN_ASET', 'PIMPINAN'] },
     { name: 'Riwayat Audit', icon: <History size={20} />, path: '/audit-logs', roles: ['ADMIN_ASET', 'PIMPINAN'] },
