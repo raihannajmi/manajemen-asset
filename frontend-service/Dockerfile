@@ -9,7 +9,7 @@ COPY package*.json ./
 # Using npm install instead of pnpm since the project uses npm globally in the backend 
 # (though user was running pnpm in frontend previously, we will use npm for standard docker flow 
 # or install pnpm if needed). Let's use npm to be safe.
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
