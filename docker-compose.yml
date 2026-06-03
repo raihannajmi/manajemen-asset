@@ -17,6 +17,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: asset_management_redis
+    command: redis-server --requirepass rahasia123
     ports:
       - "6379:6379"
     volumes:
@@ -35,6 +36,7 @@ services:
       - DATABASE_URL=postgresql://postgres:mysecretpassword@db:5432/manajemen_asset?schema=public
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=rahasia123
       # Add other required environment variables or load from .env
     env_file:
       - ./backend-service/.env

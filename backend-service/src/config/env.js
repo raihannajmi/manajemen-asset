@@ -5,6 +5,7 @@ module.exports = {
   DATABASE_URL: process.env.DATABASE_URL,
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: process.env.REDIS_PORT || 6379,
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD,
   JWT_SECRET: process.env.JWT_SECRET || 'secret',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
 };

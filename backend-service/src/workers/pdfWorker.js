@@ -8,6 +8,7 @@ const prisma = require('../config/db');
 const redisConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,
+  password: process.env.REDIS_PASSWORD || undefined,
 };
 
 // Queue for adding PDF generation jobs
